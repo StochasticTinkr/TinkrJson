@@ -7,6 +7,16 @@ import kotlinx.serialization.json.*
 
 
 class Example(wrapped: JsonObject) : Compound(wrapped) {
+    val foo by Schema.foo
+    val bar by Schema.bar
+    val baz by Schema.baz
+    val qux by Schema.qux
+    val quux by Schema.quux
+    val quuxString by Schema.quuxString
+    val quuxInt by Schema.quuxInt
+    val quuxObj by Schema.quuxObj
+
+
     companion object Schema : CompoundClass<Example>({ Example(it) }) {
         val foo = string("foo")
         val bar = int("bar")
@@ -19,6 +29,8 @@ class Example(wrapped: JsonObject) : Compound(wrapped) {
     }
 
     class ExampleSubObject(wrapped: JsonObject) : Compound(wrapped) {
+        val quuz by Schema.quuz
+
         companion object Schema : CompoundClass<ExampleSubObject>({ ExampleSubObject(it) }) {
             val quuz = string("quuz")
         }
