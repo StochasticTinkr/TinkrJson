@@ -6,7 +6,7 @@ class CompoundJsonType<S : JsonObjectSchema>(
     val schema: S,
     private val objectType: JsonType<JsonObject> = jsonObject,
 ) : JsonType<JsonObject> {
-    override fun Kson.toSchema() {
+    override fun JsonObject.toSchema() {
         with(schema) {
             toSchema(this@toSchema)
         }

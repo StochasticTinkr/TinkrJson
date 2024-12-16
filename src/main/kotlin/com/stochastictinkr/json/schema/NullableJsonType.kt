@@ -13,13 +13,13 @@ class NullableJsonType<T : Any, J : JsonType<T>>(
 
     override fun isValid(jsonElement: JsonElement) = jsonElement is JsonNull || innerType.isValid(jsonElement)
 
-    override fun KsonArray.asUnionMember() {
-        value("null")
+    override fun JsonArray.asUnionMember() {
+        add("null")
         with(innerType) { asUnionMember() }
     }
 
-    override fun Kson.toSchema() {
-        "type" /= ksonArray { asUnionMember() }
+    override fun JsonObject.toSchema() {
+        "type"(JsonArray().apply { asUnionMember() })
     }
 }
 

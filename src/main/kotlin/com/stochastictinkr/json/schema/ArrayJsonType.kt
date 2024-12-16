@@ -6,18 +6,13 @@ class ArrayJsonType<T>(
     val outer: JsonType<JsonArray>,
     val items: JsonType<T>,
 ) : JsonType<List<T>> {
-    override fun Kson.toSchema() {
-        "type" /= "array"
-        obj("items") { with(items) { toSchema() } }
+    override fun JsonObject.toSchema() {
+        "type"("array")
+        "items" { items.run { toSchema() } }
     }
 
     override fun isValid(jsonElement: JsonElement): Boolean =
-        jsonElement is JsonArray &&
-            jsonElement.all {
-                this.items.isValid(
-                    it
-                )
-            }
+        jsonElement.jsonArrayOrNull?.all { items.isValid(it) } ?: false
 
     override fun convert(jsonElement: JsonElement): List<T> = outer.convert(jsonElement).map { items.convert(it) }
 }

@@ -2,9 +2,6 @@ package com.stochastictinkr.json.schema
 
 import com.stochastictinkr.json.JsonObject
 import com.stochastictinkr.json.wrapper.*
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-
 
 class Example(wrapped: JsonObject) : Compound(wrapped) {
     val foo by Schema.foo
@@ -37,9 +34,3 @@ class Example(wrapped: JsonObject) : Compound(wrapped) {
     }
 }
 
-private val prettyJson = Json { prettyPrint = true }
-
-fun main() {
-    val schemaObject = Example.schema.toSchema()
-    prettyJson.encodeToString(serializer(), schemaObject).also(::println)
-}

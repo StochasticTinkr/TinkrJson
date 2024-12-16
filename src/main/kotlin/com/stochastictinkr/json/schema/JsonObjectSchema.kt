@@ -23,32 +23,33 @@ interface JsonObjectSchemaBuilder {
 open class JsonObjectSchema : JsonObjectSchemaBuilder {
     private val properties = mutableMapOf<String, PropertyDescriptor<*, *, *>>()
 
-    fun toSchema(kson: Kson) {
-        with(kson) {
-            "type" /= "object"
+    fun toSchema(jsonObject: JsonObject) {
+        with(jsonObject) {
+            set("type", "object")
             properties()
         }
     }
 
-    fun toSchema() = kson { toSchema(this) }
+    fun toSchema() = JsonObject().also { toSchema(it) }
 
-    private fun Kson.properties() {
+    private fun JsonObject.properties() {
         "properties" {
             properties.forEach { (name, slot) ->
                 name {
                     with(slot.type) { toSchema() }
-                    slot.description?.let { "description" /= it }
+                    slot.description?.let { "description"(it) }
                 }
             }
         }
 
-        "required" /=
+        "required"(
             properties.values
                 .filter { it.isRequired }
                 .map { it.name }
-                .mapToJsonArray()
+                .toJsonArray()
+        )
 
-        "additionalProperties" /= false
+        "additionalProperties"(false)
     }
 
     internal fun matches(jsonObject: JsonObject): Boolean =

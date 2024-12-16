@@ -7,10 +7,12 @@ private class SimpleJsonType<T>(
     val converter: JsonElement.() -> T,
     val validator: JsonElement.() -> Boolean = { true },
 ) : JsonType<T> {
-    override fun KsonArray.asUnionMember() = value(name)
+    override fun JsonArray.asUnionMember() {
+        add(name)
+    }
 
-    override fun Kson.toSchema() {
-        "type" /= name
+    override fun JsonObject.toSchema() {
+        "type"(name)
     }
 
     override fun convert(jsonElement: JsonElement): T = jsonElement.converter()
@@ -20,13 +22,13 @@ private class SimpleJsonType<T>(
 
 private inline fun <T> primitiveType(
     name: String,
-    crossinline get: JsonPrimitive.() -> T,
-    crossinline getOrNull: JsonPrimitive.() -> T?,
+    crossinline get: JsonElement.() -> T,
+    crossinline getOrNull: JsonElement.() -> T?,
 ): JsonType<T> =
     SimpleJsonType(
         name = name,
-        converter = { jsonPrimitive.get() },
-        validator = { (this as? JsonPrimitive)?.getOrNull() != null }
+        converter = { get() },
+        validator = { getOrNull() != null }
     )
 
 private inline fun <reified T : JsonElement> elementType(
@@ -39,11 +41,11 @@ private inline fun <reified T : JsonElement> elementType(
         validator = { this is T }
     )
 
-val int = primitiveType("integer", { int }, { intOrNull })
-val string = primitiveType("string", { content }, { content.takeIf { isString } })
-val boolean = primitiveType("boolean", { boolean }, { booleanOrNull })
-val float = primitiveType("number", { float }, { floatOrNull })
-val double = primitiveType("number", { double }, { doubleOrNull })
-val long = primitiveType("number", { long }, { longOrNull })
+val int = primitiveType("integer", { jsonNumber.toInt() }, { jsonNumberOrNull?.toIntOrNull() })
+val string = primitiveType("string", { jsonString.value }, { jsonStringOrNull?.value })
+val boolean = primitiveType("boolean", { jsonBoolean.value }, { jsonBooleanOrNull?.value })
+val float = primitiveType("number", { jsonNumber.toFloat() }, { jsonNumberOrNull?.toFloatOrNull() })
+val double = primitiveType("number", { jsonNumber.toDouble() }, { jsonNumberOrNull?.toDoubleOrNull() })
+val long = primitiveType("number", { jsonNumber.toLong() }, { jsonNumberOrNull?.toLongOrNull() })
 val jsonArray = elementType("array") { jsonArray }
 val jsonObject = elementType("object") { jsonObject }

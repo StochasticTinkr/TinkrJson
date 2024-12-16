@@ -9,12 +9,12 @@ class UnionJsonType(
         var type: JsonType<*>,
     )
 
-    override fun KsonArray.asUnionMember() {
+    override fun JsonArray.asUnionMember() {
         types.forEach { (type) -> with(type) { asUnionMember() } }
     }
 
-    override fun Kson.toSchema() {
-        "type" /= ksonArray { asUnionMember() }
+    override fun JsonObject.toSchema() {
+        "type"[{ asUnionMember() }]
     }
 
     override fun isValid(jsonElement: JsonElement): Boolean = types.any { (type) -> type.isValid(jsonElement) }
