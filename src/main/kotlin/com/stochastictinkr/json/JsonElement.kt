@@ -14,12 +14,14 @@ sealed interface JsonElement {
     val isNull get() = false
 }
 
-data class JsonString(val value: String) : JsonElement {
+sealed interface JsonLiteral : JsonElement
+
+data class JsonString(val value: String) : JsonLiteral {
     override val jsonStringOrNull: JsonString get() = this
     override val jsonString: JsonString get() = this
 }
 
-sealed interface JsonNumber : JsonElement {
+sealed interface JsonNumber : JsonLiteral {
     fun toNumber(): Number
     fun toDouble(): Double
     fun toFloat(): Float
@@ -40,7 +42,7 @@ sealed interface JsonNumber : JsonElement {
     }
 }
 
-private sealed class AbstractJsonNumber<T : Number> : JsonElement, JsonNumber {
+private sealed class AbstractJsonNumber<T : Number> : JsonNumber {
     abstract val value: T
     override val jsonNumberOrNull: JsonNumber get() = this
     override val jsonNumber: JsonNumber get() = this
@@ -77,12 +79,12 @@ private data class JsonDouble(override val value: Double) : AbstractJsonNumber<D
     override fun toDoubleOrNull() = value
 }
 
-data class JsonBoolean(val value: Boolean) : JsonElement {
+data class JsonBoolean(val value: Boolean) : JsonLiteral {
     override val jsonBooleanOrNull: JsonBoolean get() = this
     override val jsonBoolean: JsonBoolean get() = this
 }
 
-data object JsonNull : JsonElement {
+data object JsonNull : JsonLiteral {
     val value: Nothing? = null
     override val isNull get() = true
 }
