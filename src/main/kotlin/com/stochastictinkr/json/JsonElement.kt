@@ -201,7 +201,7 @@ data object JsonNull : JsonLiteral {
 /**
  * A mutable reference to a JSON element.
  */
-@KsonDsl
+@TinkrJsonDsl
 data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to a string.
@@ -325,7 +325,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
 /**
  * Represents a JSON object. The object is mutable and can be modified after creation.
  */
-@KsonDsl
+@TinkrJsonDsl
 class JsonObject private constructor(
     private val content: MutableMap<String, JsonElement>,
     unit: Unit = Unit,
