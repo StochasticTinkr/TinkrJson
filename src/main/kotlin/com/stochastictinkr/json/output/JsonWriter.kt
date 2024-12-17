@@ -2,12 +2,34 @@ package com.stochastictinkr.json.output
 
 import com.stochastictinkr.json.*
 
+/**
+ * Writes a [JsonRoot] or [JsonElement] to an [Appendable] or as a [String].
+ */
 sealed class JsonWriter(private val pretty: Boolean) {
+    /**
+     * A [JsonWriter] that writes JSON in a compact format, with no extra whitespace.
+     */
     companion object Compact : JsonWriter(false) {
-        operator fun invoke(pretty: Boolean) = if (pretty) Pretty else Compact
+        /**
+         * Returns a [JsonWriter] that writes JSON in either a compact or pretty format.
+         * @param pretty `true` to write pretty JSON, `false` to write compact JSON.
+         */
+        operator fun invoke(pretty: Boolean = false) = if (pretty) Pretty else Compact
     }
 
+    /**
+     * A [JsonWriter] that writes JSON in a pretty format, with extra whitespace for readability.
+     */
+    data object Pretty : JsonWriter(true)
+
+    /**
+     * Writes the element from the [JsonRoot] to the [output].
+     */
     fun write(json: JsonRoot, output: Appendable) = write(json.jsonElement, output)
+
+    /**
+     * Writes the [json] element to the [output].
+     */
     fun write(json: JsonElement, output: Appendable) {
         val style = if (pretty) PrettyJson(output, 0) else CompactJson(output)
         var head: ParentProgress<*>? = RootProgress(json, style)
@@ -31,15 +53,19 @@ sealed class JsonWriter(private val pretty: Boolean) {
         }
     }
 
+    /**
+     * Returns the element from the [JsonRoot] as a JSON string.
+     */
     fun writeToString(json: JsonRoot) = writeToString(json.jsonElement)
-    fun writeToString(json: JsonElement) = buildString { write(json, this) }
 
-    data object Pretty : JsonWriter(true)
+    /**
+     * Returns the [json] element as a JSON string.
+     */
+    fun writeToString(json: JsonElement) = buildString { write(json, this) }
 
     private fun ParentProgress<*>.checkCycle(current: JsonElement?) {
         require(generateSequence(this) { it.next }.none { it.json === current }) { "Circular reference detected" }
     }
-
 
     private sealed class JsonStyler(val output: Appendable) {
         abstract fun nextIndent(): JsonStyler
