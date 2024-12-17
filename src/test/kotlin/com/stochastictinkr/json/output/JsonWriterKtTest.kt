@@ -19,25 +19,25 @@ class JsonWriterKtTest {
         @Language("JSON")
         val expected =
             """"Quote: \"\nBackslash: \\\nBackspace: \b\nForm feed: \f\nCarriage return: \r\nTab: \t""""
-        val result = jsonToString(JsonString(input))
+        val result = JsonWriter.writeToString(JsonString(input))
         assertEquals(expected, result)
     }
 
     @Test
     fun literals() {
-        assertEquals("true", jsonToString(JsonBoolean(true)))
-        assertEquals("false", jsonToString(JsonBoolean(false)))
-        assertEquals("null", jsonToString(JsonNull))
-        assertEquals("123", jsonToString(JsonNumber(123)))
-        assertEquals("123.45", jsonToString(JsonNumber(123.45f)))
-        assertEquals("1.2E205", jsonToString(JsonNumber(1.2e205)))
+        assertEquals("true", JsonWriter.writeToString(JsonBoolean(true)))
+        assertEquals("false", JsonWriter.writeToString(JsonBoolean(false)))
+        assertEquals("null", JsonWriter.writeToString(JsonNull))
+        assertEquals("123", JsonWriter.writeToString(JsonNumber(123)))
+        assertEquals("123.45", JsonWriter.writeToString(JsonNumber(123.45f)))
+        assertEquals("1.2E205", JsonWriter.writeToString(JsonNumber(1.2e205)))
     }
 
     @Test
     fun `empty object`() {
         val input = JsonObject()
         val expected = "{}"
-        val result = jsonToString(input)
+        val result = JsonWriter.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -45,7 +45,7 @@ class JsonWriterKtTest {
     fun `empty array`() {
         val input = JsonArray()
         val expected = "[]"
-        val result = jsonToString(input)
+        val result = JsonWriter.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -56,7 +56,7 @@ class JsonWriterKtTest {
         input["number"] = JsonNumber(123)
         input["array"] = JsonArray(JsonString("element"))
         val expected = """{"key":"value","number":123,"array":["element"]}"""
-        val result = jsonToString(input)
+        val result = JsonWriter.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -65,7 +65,7 @@ class JsonWriterKtTest {
         val input = JsonObject()
         input["key"] = JsonString("value")
         val expected = """{"key":"value"}"""
-        val result = jsonToString(input)
+        val result = JsonWriter.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -76,7 +76,7 @@ class JsonWriterKtTest {
         input.add(JsonNumber(123))
         input.add(JsonArray(JsonString("element")))
         val expected = """["value",123,["element"]]"""
-        val result = jsonToString(input)
+        val result = JsonWriter.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -85,7 +85,7 @@ class JsonWriterKtTest {
         val input = JsonArray()
         input.add(JsonString("value"))
         val expected = """["value"]"""
-        val result = jsonToString(input)
+        val result = JsonWriter.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -96,7 +96,7 @@ class JsonWriterKtTest {
         input["array"] = array
         array.add(input)
         assertFailsWith<IllegalArgumentException> {
-            jsonToString(input)
+            JsonWriter.writeToString(input)
         }
     }
 
@@ -104,7 +104,7 @@ class JsonWriterKtTest {
     fun `pretty empty object`() {
         val input = JsonObject()
         val expected = "{}"
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -112,7 +112,7 @@ class JsonWriterKtTest {
     fun `pretty empty array`() {
         val input = JsonArray()
         val expected = "[]"
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -125,7 +125,7 @@ class JsonWriterKtTest {
             |    "number": 123
             |}
             """.trimMargin()
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -138,7 +138,7 @@ class JsonWriterKtTest {
             |    123
             |]
             """.trimMargin()
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -161,7 +161,7 @@ class JsonWriterKtTest {
             |    ]
             |}
             """.trimMargin()
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -184,7 +184,7 @@ class JsonWriterKtTest {
             |    }
             |]
             """.trimMargin()
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -220,7 +220,7 @@ class JsonWriterKtTest {
             |    ]
             |}
             """.trimMargin()
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -232,7 +232,7 @@ class JsonWriterKtTest {
             |    "single"
             |]
             """.trimMargin()
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 
@@ -244,7 +244,7 @@ class JsonWriterKtTest {
             |    "key": "value"
             |}
             """.trimMargin()
-        val result = jsonToString(input, pretty = true)
+        val result = JsonWriter.Pretty.writeToString(input)
         assertEquals(expected, result)
     }
 }
