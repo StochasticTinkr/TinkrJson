@@ -18,7 +18,6 @@ open class Compound(
         thisRef: Any?,
         property: Any?,
     ) = json[this.name]?.let(type::convert)
-
 }
 
 open class CompoundClass<T>(

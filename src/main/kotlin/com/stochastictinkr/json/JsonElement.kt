@@ -199,13 +199,14 @@ data object JsonNull : JsonLiteral {
 }
 
 /**
- * A mutable reference to a JSON element.
+ * A mutable reference to an arbitrary JsonElement.
  */
 @TinkrJsonDsl
 data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to a string.
      */
+    @TinkrJsonDsl
     fun set(value: String) {
         jsonElement = JsonString(value)
     }
@@ -213,6 +214,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to an integer.
      */
+    @TinkrJsonDsl
     fun set(value: Int) {
         jsonElement = JsonInt(value)
     }
@@ -220,6 +222,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to a long.
      */
+    @TinkrJsonDsl
     fun set(value: Long) {
         jsonElement = JsonLong(value)
     }
@@ -227,6 +230,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to a float.
      */
+    @TinkrJsonDsl
     fun set(value: Float) {
         jsonElement = JsonFloat(value)
     }
@@ -234,6 +238,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to a double.
      */
+    @TinkrJsonDsl
     fun set(value: Double) {
         jsonElement = JsonDouble(value)
     }
@@ -241,6 +246,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to a boolean.
      */
+    @TinkrJsonDsl
     fun set(value: Boolean) {
         jsonElement = JsonBoolean(value)
     }
@@ -249,6 +255,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
      * Sets the value of the JSON element to a string, or null if the value is null.
      */
     @JvmName("setNullableString")
+    @TinkrJsonDsl
     fun set(value: String?) {
         value?.let(::set) ?: setNull()
     }
@@ -257,6 +264,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
      * Sets the value of the JSON element to an integer, or null if the value is null.
      */
     @JvmName("setNullableInt")
+    @TinkrJsonDsl
     fun set(value: Int?) {
         value?.let(::set) ?: setNull()
     }
@@ -265,6 +273,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
      * Sets the value of the JSON element to a long, or null if the value is null.
      */
     @JvmName("setNullableLong")
+    @TinkrJsonDsl
     fun set(value: Long?) {
         value?.let(::set) ?: setNull()
     }
@@ -273,6 +282,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
      * Sets the value of the JSON element to a float, or null if the value is null.
      */
     @JvmName("setNullableFloat")
+    @TinkrJsonDsl
     fun set(value: Float?) {
         value?.let(::set) ?: setNull()
     }
@@ -281,6 +291,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
      * Sets the value of the JSON element to a double, or null if the value is null.
      */
     @JvmName("setNullableDouble")
+    @TinkrJsonDsl
     fun set(value: Double?) {
         value?.let(::set) ?: setNull()
     }
@@ -289,6 +300,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
      * Sets the value of the JSON element to a boolean, or null if the value is null.
      */
     @JvmName("setNullableBoolean")
+    @TinkrJsonDsl
     fun set(value: Boolean?) {
         value?.let(::set) ?: setNull()
     }
@@ -296,6 +308,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value of the JSON element to null.
      */
+    @TinkrJsonDsl
     fun setNull() {
         set(JsonNull)
     }
@@ -303,6 +316,7 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value to the given JSON element.
      */
+    @TinkrJsonDsl
     fun set(element: JsonElement) {
         jsonElement = element
     }
@@ -310,14 +324,16 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
      * Sets the value to a JSON array.
      */
-    inline fun jsonArray(build: JsonArray.() -> Unit = {}) {
+    @TinkrJsonDsl
+    inline fun setArray(build: JsonArray.() -> Unit = {}) {
         jsonElement = JsonArray().apply(build)
     }
 
     /**
      * Sets the value to a JSON object.
      */
-    inline fun jsonObject(build: JsonObject.() -> Unit = {}) {
+    @TinkrJsonDsl
+    inline fun setObject(build: JsonObject.() -> Unit = {}) {
         jsonElement = JsonObject()
     }
 }
@@ -365,6 +381,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: String?) {
         set(this, value)
     }
@@ -381,6 +398,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: Int?) {
         set(this, value)
     }
@@ -397,6 +415,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: Long?) {
         set(this, value)
     }
@@ -413,6 +432,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: Float?) {
         set(this, value)
     }
@@ -429,6 +449,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: Double?) {
         set(this, value)
     }
@@ -445,6 +466,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: Boolean?) {
         set(this, value)
     }
@@ -462,6 +484,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: JsonRoot) {
         set(this, value.jsonElement)
     }
@@ -479,6 +502,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value The value.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: JsonElement) {
         set(this, value)
     }
@@ -499,6 +523,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param build The block to apply to the new JsonArray.
      */
+    @TinkrJsonDsl
     inline operator fun String.get(build: JsonArray.() -> Unit) {
         set(this, JsonArray().apply(build))
     }
@@ -518,6 +543,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param builder The block to apply to the new JsonObject.
      */
+    @TinkrJsonDsl
     inline operator fun String.invoke(builder: JsonObject.() -> Unit) {
         set(this, JsonObject().apply(builder))
     }
@@ -536,6 +562,7 @@ class JsonObject private constructor(
      * @receiver The key.
      * @param value null.
      */
+    @TinkrJsonDsl
     operator fun String.invoke(value: Nothing?) {
         set(this, JsonNull)
     }
@@ -545,6 +572,7 @@ class JsonObject private constructor(
      * @param key The key
      * @param value The value
      */
+    @TinkrJsonDsl
     operator fun set(key: String, value: String?) {
         content[key] = value?.let(::JsonString) ?: JsonNull
     }
@@ -554,6 +582,7 @@ class JsonObject private constructor(
      * @param key The key
      * @param value The value
      */
+    @TinkrJsonDsl
     operator fun set(key: String, value: Int?) {
         content[key] = value?.let(::JsonInt) ?: JsonNull
     }
@@ -563,6 +592,7 @@ class JsonObject private constructor(
      * @param key The key
      * @param value The value
      */
+    @TinkrJsonDsl
     operator fun set(key: String, value: Long?) {
         content[key] = value?.let(::JsonLong) ?: JsonNull
     }
@@ -572,6 +602,7 @@ class JsonObject private constructor(
      * @param key The key
      * @param value The value
      */
+    @TinkrJsonDsl
     operator fun set(key: String, value: Float?) {
         content[key] = value?.let(::JsonFloat) ?: JsonNull
     }
@@ -581,6 +612,7 @@ class JsonObject private constructor(
      * @param key The key
      * @param value The value
      */
+    @TinkrJsonDsl
     operator fun set(key: String, value: Double?) {
         content[key] = value?.let(::JsonDouble) ?: JsonNull
     }
@@ -590,6 +622,7 @@ class JsonObject private constructor(
      * @param key The key
      * @param value The value
      */
+    @TinkrJsonDsl
     operator fun set(key: String, value: Boolean?) {
         content[key] = value?.let(::JsonBoolean) ?: JsonNull
     }
@@ -599,6 +632,7 @@ class JsonObject private constructor(
      * Adds all key-value pairs from the given map to this object, converting the values to JSON elements.
      */
     @JvmName("putAllString")
+    @TinkrJsonDsl
     fun putAll(map: Map<String, String?>) {
         map.forEach { (key, value) -> key(value) }
     }
@@ -607,6 +641,7 @@ class JsonObject private constructor(
      * Adds all key-value pairs from the given map to this object, converting the values to JSON elements.
      */
     @JvmName("putAllInt")
+    @TinkrJsonDsl
     fun putAll(map: Map<String, Int?>) {
         map.forEach { (key, value) -> key(value) }
     }
@@ -615,6 +650,7 @@ class JsonObject private constructor(
      * Adds all key-value pairs from the given map to this object, converting the values to JSON elements.
      */
     @JvmName("putAllLong")
+    @TinkrJsonDsl
     fun putAll(map: Map<String, Long?>) {
         map.forEach { (key, value) -> key(value) }
     }
@@ -623,6 +659,7 @@ class JsonObject private constructor(
      * Adds all key-value pairs from the given map to this object, converting the values to JSON elements.
      */
     @JvmName("putAllFloat")
+    @TinkrJsonDsl
     fun putAll(map: Map<String, Float?>) {
         map.forEach { (key, value) -> key(value) }
     }
@@ -631,6 +668,7 @@ class JsonObject private constructor(
      * Adds all key-value pairs from the given map to this object, converting the values to JSON elements.
      */
     @JvmName("putAllDouble")
+    @TinkrJsonDsl
     fun putAll(map: Map<String, Double?>) {
         map.forEach { (key, value) -> key(value) }
     }
@@ -639,6 +677,7 @@ class JsonObject private constructor(
      * Adds all key-value pairs from the given map to this object, converting the values to JSON elements.
      */
     @JvmName("putAllBoolean")
+    @TinkrJsonDsl
     fun putAll(map: Map<String, Boolean?>) {
         map.forEach { (key, value) -> key(value) }
     }
@@ -656,6 +695,7 @@ class JsonObject private constructor(
     }
 }
 
+@TinkrJsonDsl
 class JsonArray(
     private val content: MutableList<JsonElement>,
 ) : JsonElement, MutableList<JsonElement> by content {
@@ -669,6 +709,7 @@ class JsonArray(
     /**
      * Sets the value at the given index to a string, or null if the value is null.
      */
+    @TinkrJsonDsl
     operator fun set(index: Int, value: String?) {
         content[index] = value?.let(::JsonString) ?: JsonNull
     }
@@ -676,6 +717,7 @@ class JsonArray(
     /**
      * Sets the value at the given index to an integer, or null if the value is null.
      */
+    @TinkrJsonDsl
     operator fun set(index: Int, value: Int?) {
         content[index] = value?.let(::JsonInt) ?: JsonNull
     }
@@ -683,6 +725,7 @@ class JsonArray(
     /**
      * Sets the value at the given index to a long, or null if the value is null.
      */
+    @TinkrJsonDsl
     operator fun set(index: Int, value: Long?) {
         content[index] = value?.let(::JsonLong) ?: JsonNull
     }
@@ -690,6 +733,7 @@ class JsonArray(
     /**
      * Sets the value at the given index to a float, or null if the value is null.
      */
+    @TinkrJsonDsl
     operator fun set(index: Int, value: Float?) {
         content[index] = value?.let(::JsonFloat) ?: JsonNull
     }
@@ -697,6 +741,7 @@ class JsonArray(
     /**
      * Sets the value at the given index to a double, or null if the value is null.
      */
+    @TinkrJsonDsl
     operator fun set(index: Int, value: Double?) {
         content[index] = value?.let(::JsonDouble) ?: JsonNull
     }
@@ -704,6 +749,7 @@ class JsonArray(
     /**
      * Sets the value at the given index to a boolean, or null if the value is null.
      */
+    @TinkrJsonDsl
     operator fun set(index: Int, value: Boolean?) {
         content[index] = value?.let(::JsonBoolean) ?: JsonNull
     }
@@ -711,78 +757,93 @@ class JsonArray(
     /**
      * Adds a string to the array, or null if the value is null.
      */
+    @TinkrJsonDsl
     fun add(value: String?) = content.add(value?.let(::JsonString) ?: JsonNull)
 
     /**
      * Adds an integer to the array, or null if the value is null.
      */
+    @TinkrJsonDsl
     fun add(value: Int?) = content.add(value?.let(::JsonInt) ?: JsonNull)
 
     /**
      * Adds a long to the array, or null if the value is null.
      */
+    @TinkrJsonDsl
     fun add(value: Long?) = content.add(value?.let(::JsonLong) ?: JsonNull)
 
     /**
      * Adds a float to the array, or null if the value is null.
      */
+    @TinkrJsonDsl
     fun add(value: Float?) = content.add(value?.let(::JsonFloat) ?: JsonNull)
 
     /**
      * Adds a double to the array, or null if the value is null.
      */
+    @TinkrJsonDsl
     fun add(value: Double?) = content.add(value?.let(::JsonDouble) ?: JsonNull)
 
     /**
      * Adds a boolean to the array, or null if the value is null.
      */
+    @TinkrJsonDsl
     fun add(value: Boolean?) = content.add(value?.let(::JsonBoolean) ?: JsonNull)
 
     /**
      * Adds a new JsonObject to the array, and applies the given [build] block to it.
      */
+    @TinkrJsonDsl
     inline fun addObject(build: JsonObject.() -> Unit = {}) = add(JsonObject().apply(build))
 
     /**
      * Adds a new JsonArray to the array, and applies the given [build] block to it.
      */
+    @TinkrJsonDsl
     inline fun addArray(build: JsonArray.() -> Unit = {}) = add(JsonArray().apply(build))
 
 
     /**
      * Removes the first occurrence of the given string from the array.
      */
+    @TinkrJsonDsl
     fun remove(value: String) = content.remove(JsonString(value))
 
     /**
      * Removes the first occurrence of the given integer from the array.
      */
+    @TinkrJsonDsl
     fun remove(value: Int) = content.remove(JsonInt(value))
 
     /**
      * Removes the first occurrence of the given long from the array.
      */
+    @TinkrJsonDsl
     fun remove(value: Long) = content.remove(JsonLong(value))
 
     /**
      * Removes the first occurrence of the given float from the array.
      */
+    @TinkrJsonDsl
     fun remove(value: Float) = content.remove(JsonFloat(value))
 
     /**
      * Removes the first occurrence of the given double from the array.
      */
+    @TinkrJsonDsl
     fun remove(value: Double) = content.remove(JsonDouble(value))
 
     /**
      * Removes the first occurrence of the given boolean from the array.
      */
+    @TinkrJsonDsl
     fun remove(value: Boolean) = content.remove(JsonBoolean(value))
 
 
     /**
      * Convenience method for [add].
      */
+    @TinkrJsonDsl
     operator fun plusAssign(value: JsonElement) {
         add(value)
     }
@@ -790,6 +851,7 @@ class JsonArray(
     /**
      * Convenience method for [add].
      */
+    @TinkrJsonDsl
     operator fun plusAssign(value: String?) {
         add(value)
     }
@@ -797,6 +859,7 @@ class JsonArray(
     /**
      * Convenience method for [add].
      */
+    @TinkrJsonDsl
     operator fun plusAssign(value: Int?) {
         add(value)
     }
@@ -804,6 +867,7 @@ class JsonArray(
     /**
      * Convenience method for [add].
      */
+    @TinkrJsonDsl
     operator fun plusAssign(value: Long?) {
         add(value)
     }
@@ -811,6 +875,7 @@ class JsonArray(
     /**
      * Convenience method for [add].
      */
+    @TinkrJsonDsl
     operator fun plusAssign(value: Float?) {
         add(value)
     }
@@ -818,6 +883,7 @@ class JsonArray(
     /**
      * Convenience method for [add].
      */
+    @TinkrJsonDsl
     operator fun plusAssign(value: Double?) {
         add(value)
     }
@@ -825,6 +891,7 @@ class JsonArray(
     /**
      * Convenience method for [add].
      */
+    @TinkrJsonDsl
     operator fun plusAssign(value: Boolean?) {
         add(value)
     }
@@ -832,6 +899,7 @@ class JsonArray(
     /**
      * Adds the contents of the given iterable to this array.
      */
+    @TinkrJsonDsl
     @JvmName("addAllString")
     fun addAll(values: Iterable<String?>) = values.forEach(::add)
 
@@ -839,144 +907,168 @@ class JsonArray(
      * Adds the contents of the given iterable to this array.
      */
     @JvmName("addAllInt")
+    @TinkrJsonDsl
     fun addAll(values: Iterable<Int?>) = values.forEach(::add)
 
     /**
      * Adds the contents of the given iterable to this array.
      */
     @JvmName("addAllLong")
+    @TinkrJsonDsl
     fun addAll(values: Iterable<Long?>) = values.forEach(::add)
 
     /**
      * Adds the contents of the given iterable to this array.
      */
     @JvmName("addAllFloat")
+    @TinkrJsonDsl
     fun addAll(values: Iterable<Float?>) = values.forEach(::add)
 
     /**
      * Adds the contents of the given iterable to this array.
      */
     @JvmName("addAllDouble")
+    @TinkrJsonDsl
     fun addAll(values: Iterable<Double?>) = values.forEach(::add)
 
     /**
      * Adds the contents of the given iterable to this array.
      */
     @JvmName("addAllBoolean")
+    @TinkrJsonDsl
     fun addAll(values: Iterable<Boolean?>) = values.forEach(::add)
 
     /**
      * Convenience method for [addAll].
      */
     @JvmName("plusAssignStrings")
+    @TinkrJsonDsl
     operator fun plusAssign(values: Iterable<String?>) = addAll(values)
 
     /**
      * Convenience method for [addAll].
      */
     @JvmName("plusAssignInts")
+    @TinkrJsonDsl
     operator fun plusAssign(values: Iterable<Int?>) = addAll(values)
 
     /**
      * Convenience method for [addAll].
      */
     @JvmName("plusAssignLongs")
+    @TinkrJsonDsl
     operator fun plusAssign(values: Iterable<Long?>) = addAll(values)
 
     /**
      * Convenience method for [addAll].
      */
     @JvmName("plusAssignFloats")
+    @TinkrJsonDsl
     operator fun plusAssign(values: Iterable<Float?>) = addAll(values)
 
     /**
      * Convenience method for [addAll].
      */
     @JvmName("plusAssignDoubles")
+    @TinkrJsonDsl
     operator fun plusAssign(values: Iterable<Double?>) = addAll(values)
 
     /**
      * Convenience method for [addAll].
      */
     @JvmName("plusAssignBooleans")
+    @TinkrJsonDsl
     operator fun plusAssign(values: Iterable<Boolean?>) = addAll(values)
 
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(value: String?) = JsonArray(content + value.toJsonString())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(value: Int?) = JsonArray(content + value.toJsonNumber())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(value: Long?) = JsonArray(content + value.toJsonNumber())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(value: Float?) = JsonArray(content + value.toJsonNumber())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(value: Double?) = JsonArray(content + value.toJsonNumber())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(value: Boolean?) = JsonArray(content + value.toJsonBoolean())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(value: JsonElement) = JsonArray(content + value)
-
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusStrings")
+    @TinkrJsonDsl
     operator fun plus(values: Iterable<String?>) = JsonArray(content + values.map { it.toJsonString() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusInts")
+    @TinkrJsonDsl
     operator fun plus(values: Iterable<Int?>) = JsonArray(content + values.map { it.toJsonNumber() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusLongs")
+    @TinkrJsonDsl
     operator fun plus(values: Iterable<Long?>) = JsonArray(content + values.map { it.toJsonNumber() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusFloats")
+    @TinkrJsonDsl
     operator fun plus(values: Iterable<Float?>) = JsonArray(content + values.map { it.toJsonNumber() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusDoubles")
+    @TinkrJsonDsl
     operator fun plus(values: Iterable<Double?>) = JsonArray(content + values.map { it.toJsonNumber() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusBooleans")
+    @TinkrJsonDsl
     operator fun plus(values: Iterable<Boolean?>) = JsonArray(content + values.map { it.toJsonBoolean() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
+    @TinkrJsonDsl
     operator fun plus(values: Iterable<JsonElement>) = JsonArray(content + values)
 
     override fun equals(other: Any?): Boolean {
@@ -991,7 +1083,7 @@ class JsonArray(
     }
 
     override fun toString(): String {
-        return content.toString()
+        return "JsonArray($content)"
     }
 }
 
