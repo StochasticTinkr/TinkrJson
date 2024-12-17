@@ -2,46 +2,41 @@ package com.stochastictinkr.json.output
 
 import com.stochastictinkr.json.*
 
-fun writeJson(json: JsonRoot, output: Appendable) {
-    writeJson(json.jsonElement, output)
+fun writeJson(json: JsonRoot, output: Appendable, pretty: Boolean = false) {
+    writeJson(json.jsonElement, output, pretty)
 }
 
-fun jsonToString(json: JsonRoot) = jsonToString(json.jsonElement)
+fun jsonToString(json: JsonRoot, pretty: Boolean = false) = jsonToString(json.jsonElement, pretty)
 
-fun jsonToString(json: JsonElement) = buildString { writeJson(json, this) }
+fun jsonToString(json: JsonElement, pretty: Boolean = false) = buildString { writeJson(json, this, pretty) }
 
-fun writeJson(json: JsonElement, output: Appendable) {
-    val stack = ArrayDeque<ParentProgress>()
-    stack.add(RootProgress(json))
-    while (stack.isNotEmpty()) {
-        val next = stack.last().advance(output)
-        when (val current = next.jsonElement) {
+fun writeJson(json: JsonElement, output: Appendable, pretty: Boolean = false) {
+    var head: ParentProgress<*>? = RootProgress(json, if (pretty) PrettyJson(0) else CompactJson)
+    while (head != null) {
+        val next = head.advance(output)
+        val style = head.style
+        when (val element = next.jsonElement) {
             is JsonObject -> {
-                checkCycle(stack, current)
+                head.checkCycle(element)
                 output.append('{')
-                stack.add(ObjectProgress(current))
+                head = ObjectProgress(element, style.nextIndent(), head)
             }
 
             is JsonArray -> {
-                checkCycle(stack, current)
+                head.checkCycle(element)
                 output.append('[')
-                stack.add(ArrayProgress(current))
+                head = ArrayProgress(element, style.nextIndent(), head)
             }
 
-            is JsonLiteral -> {
-                writeLiteral(current, output)
-            }
+            is JsonLiteral -> writeLiteral(element, output)
 
-            null -> stack.removeLast()
+            null -> head = head.next
         }
     }
 }
 
-private fun checkCycle(
-    stack: ArrayDeque<ParentProgress>,
-    current: JsonElement?,
-) {
-    require(stack.none { it.json === current }) { "Circular reference detected" }
+private fun ParentProgress<*>.checkCycle(current: JsonElement?) {
+    require(generateSequence(this) { it.next }.none { it.json === current }) { "Circular reference detected" }
 }
 
 private fun writeString(string: String, output: Appendable) {
@@ -75,15 +70,60 @@ private class NextProgress(
     val jsonElement: JsonElement?,
 )
 
-private sealed interface ParentProgress {
-    val json: JsonElement?
-    fun advance(output: Appendable): NextProgress
+private sealed class JsonStyle {
+    abstract fun nextIndent(): JsonStyle
+    abstract fun keySeparator(output: Appendable)
+    abstract fun elementSeparator(output: Appendable)
+    abstract fun newLine(output: Appendable)
+    abstract fun indent(output: Appendable, relative: Int = 0)
 }
 
-private data class RootProgress(
+private data object CompactJson : JsonStyle() {
+    override fun nextIndent() = this
+    override fun keySeparator(output: Appendable) {
+        output.append(":")
+    }
+
+    override fun elementSeparator(output: Appendable) {
+        output.append(",")
+    }
+
+    override fun newLine(output: Appendable) {}
+    override fun indent(output: Appendable, relative: Int) {}
+}
+
+private data class PrettyJson(val level: Int) : JsonStyle() {
+    override fun nextIndent() = PrettyJson(level + 1)
+    override fun keySeparator(output: Appendable) {
+        output.append(": ")
+    }
+
+    override fun elementSeparator(output: Appendable) {
+        output.append(",")
+    }
+
+    override fun newLine(output: Appendable) {
+        output.append('\n')
+    }
+
+    override fun indent(output: Appendable, relative: Int) {
+        output.append("    ".repeat(level + relative))
+    }
+
+}
+
+private sealed class ParentProgress<J : JsonElement>(
+    val json: J?,
+    val style: JsonStyle,
+    val next: ParentProgress<*>?,
+) {
+    abstract fun advance(output: Appendable): NextProgress
+}
+
+private class RootProgress(
     val rootElement: JsonElement,
-) : ParentProgress {
-    override val json = null
+    style: JsonStyle,
+) : ParentProgress<JsonElement>(null, style, null) {
     var first = true
     override fun advance(output: Appendable) =
         if (first) {
@@ -94,9 +134,11 @@ private data class RootProgress(
         }
 }
 
-private data class ObjectProgress(
-    override val json: JsonObject,
-) : ParentProgress {
+private class ObjectProgress(
+    json: JsonObject,
+    style: JsonStyle,
+    next: ParentProgress<*>,
+) : ParentProgress<JsonObject>(json, style, next) {
     val keys: Iterator<Map.Entry<String, JsonElement>> = json.iterator()
     var first = true
 
@@ -105,21 +147,29 @@ private data class ObjectProgress(
             if (first) {
                 first = false
             } else {
-                output.append(',')
+                style.elementSeparator(output)
             }
+            style.newLine(output)
+            style.indent(output)
             val (key, value) = keys.next()
             writeString(key, output)
-            output.append(':')
+            style.keySeparator(output)
             return NextProgress(value)
+        }
+        if (!first) {
+            style.newLine(output)
+            style.indent(output, -1)
         }
         output.append('}')
         return NextProgress(null)
     }
 }
 
-private data class ArrayProgress(
-    override val json: JsonArray,
-) : ParentProgress {
+private class ArrayProgress(
+    json: JsonArray,
+    style: JsonStyle,
+    next: ParentProgress<*>,
+) : ParentProgress<JsonArray>(json, style, next) {
     val elements: Iterator<JsonElement> = json.iterator()
     var first = true
 
@@ -128,12 +178,17 @@ private data class ArrayProgress(
             if (first) {
                 first = false
             } else {
-                output.append(',')
+                style.elementSeparator(output)
             }
+            style.newLine(output)
+            style.indent(output)
             return NextProgress(elements.next())
+        }
+        if (!first) {
+            style.newLine(output)
+            style.indent(output, -1)
         }
         output.append(']')
         return NextProgress(null)
     }
 }
-
