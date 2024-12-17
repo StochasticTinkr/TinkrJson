@@ -74,7 +74,6 @@ private sealed class JsonStyle {
     abstract fun nextIndent(): JsonStyle
     abstract fun keySeparator(output: Appendable)
     abstract fun elementSeparator(output: Appendable)
-    abstract fun newLine(output: Appendable)
     abstract fun indent(output: Appendable, relative: Int = 0)
 }
 
@@ -88,7 +87,6 @@ private data object CompactJson : JsonStyle() {
         output.append(",")
     }
 
-    override fun newLine(output: Appendable) {}
     override fun indent(output: Appendable, relative: Int) {}
 }
 
@@ -99,14 +97,12 @@ private data class PrettyJson(val level: Int) : JsonStyle() {
     }
 
     override fun elementSeparator(output: Appendable) {
-        output.append(",")
-    }
-
-    override fun newLine(output: Appendable) {
-        output.append('\n')
+        output.append(",\n")
+        output.append("    ".repeat(level))
     }
 
     override fun indent(output: Appendable, relative: Int) {
+        output.append("\n")
         output.append("    ".repeat(level + relative))
     }
 
@@ -146,18 +142,16 @@ private class ObjectProgress(
         if (keys.hasNext()) {
             if (first) {
                 first = false
+                style.indent(output)
             } else {
                 style.elementSeparator(output)
             }
-            style.newLine(output)
-            style.indent(output)
             val (key, value) = keys.next()
             writeString(key, output)
             style.keySeparator(output)
             return NextProgress(value)
         }
         if (!first) {
-            style.newLine(output)
             style.indent(output, -1)
         }
         output.append('}')
@@ -177,15 +171,13 @@ private class ArrayProgress(
         if (elements.hasNext()) {
             if (first) {
                 first = false
+                style.indent(output)
             } else {
                 style.elementSeparator(output)
             }
-            style.newLine(output)
-            style.indent(output)
             return NextProgress(elements.next())
         }
         if (!first) {
-            style.newLine(output)
             style.indent(output, -1)
         }
         output.append(']')
