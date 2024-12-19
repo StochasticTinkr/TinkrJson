@@ -9,65 +9,66 @@ class JsonParserTests {
 
     @Test
     fun testParseString() {
-        val input = "\"hello\""
-        val result = parseJson(input)
+        val result = parseJson(
+            """
+              "hello"
+            """
+        )
         assertEquals(JsonString("hello"), result)
     }
 
     @Test
     fun testParseNumber() {
-        val input = "123"
-        val result = parseJson(input)
+        val result = parseJson("123")
         assertEquals(JsonNumber(123), result)
     }
 
     @Test
     fun testParseFloat() {
-        val input = "123.45"
-        val result = parseJson(input)
+        val result = parseJson("123.45")
         assertEquals(JsonNumber(123.45f), result)
     }
 
     @Test
     fun testParseBooleanTrue() {
-        val input = "true"
-        val result = parseJson(input)
+        val result = parseJson("true")
         assertEquals(JsonBoolean(true), result)
     }
 
     @Test
     fun testParseBooleanFalse() {
-        val input = "false"
-        val result = parseJson(input)
+        val result = parseJson("false")
         assertEquals(JsonBoolean(false), result)
     }
 
     @Test
     fun testParseNull() {
-        val input = "null"
-        val result = parseJson(input)
+        val result = parseJson("null")
         assertEquals(JsonNull, result)
     }
 
     @Test
     fun testParseEmptyObject() {
-        val input = "{}"
-        val result = parseJson(input)
+        val result = parseJson("{}")
         assertEquals(JsonObject(), result)
     }
 
     @Test
     fun testParseObjectWithValues() {
-        val input = """{"key": "value", "number": 42, "bool": true}"""
-        val result = parseJson(input)
+        val result = parseJson(
+            """{
+                "key": "value",
+                "number": 42,
+                "bool": true
+              }"""
+        )
+
         assertEquals(
-            JsonObject(
-                mapOf(
-                    "key" to JsonString("value"),
-                    "number" to JsonNumber(42),
-                    "bool" to JsonBoolean(true)
-                )
-            ), result
+            jsonObject {
+                "key"("value")
+                "number"(42)
+                "bool"(true)
+            }, result
         )
     }
 

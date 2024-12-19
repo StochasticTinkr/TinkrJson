@@ -5,54 +5,102 @@ package com.stochastictinkr.json
  */
 sealed interface JsonElement {
     /**
-     * Returns the JSON object if this element is a JSON object, or null otherwise.
+     * this element as a [JsonObject], or null if this element is not a JSON object.
      */
     val jsonObjectOrNull: JsonObject? get() = null
 
     /**
-     * Returns the JSON array if this element is a JSON array, or null otherwise.
+     * this element as a [JsonArray], or null if this element is not a JSON array.
      */
     val jsonArrayOrNull: JsonArray? get() = null
 
     /**
-     * Returns the JSON string if this element is a JSON string, or null otherwise.
+     * The String value of this element, or null if this element is not a [JsonString] literal.
      */
-    val jsonStringOrNull: JsonString? get() = null
+    val stringOrNull: String? get() = null
 
     /**
-     * Returns the JSON number if this element is a JSON number, or null otherwise.
+     * The Boolean value of this element, or null if this element is not a [JsonBoolean] literal.
+     */
+    val booleanOrNull: Boolean? get() = null
+
+
+    val numberOrNull: Number? get() = null
+
+    /**
+     * The Int value of this element, or null if this element is not a integer [JsonNumber] literal.
+     */
+    val intOrNull: Int? get() = null
+
+    /**
+     * The Long value of this element, or null if this element is not a long [JsonNumber] literal.
+     */
+    val longOrNull: Long? get() = null
+
+    /**
+     * The Float value of this element, or null if this element is not a float [JsonNumber] literal.
+     */
+    val floatOrNull: Float? get() = null
+
+    /**
+     * The Double value of this element, or null if this element is not a double [JsonNumber] literal.
+     */
+    val doubleOrNull: Double? get() = null
+
+    /**
+     * This element as a [JsonNumber], or null if this element is not a JSON number.
      */
     val jsonNumberOrNull: JsonNumber? get() = null
 
     /**
-     * Returns the JSON boolean if this element is a JSON boolean, or null otherwise.
-     */
-    val jsonBooleanOrNull: JsonBoolean? get() = null
-
-    /**
-     * Returns the JSON object if this element is a JSON object, or throws an error otherwise.
+     * This element as a [JsonObject], or throws an error if this element is not a JSON object.
      */
     val jsonObject: JsonObject get() = error("Expected JsonObject, but was $this")
 
     /**
-     * Returns the JSON array if this element is a JSON array, or throws an error otherwise.
+     * This element as a [JsonArray], or throws an error if this element is not a JSON array.
      */
     val jsonArray: JsonArray get() = error("Expected JsonArray, but was $this")
 
     /**
-     * Returns the JSON string if this element is a JSON string, or throws an error otherwise.
+     * The String value of this element, or throws an error if this element is not a [JsonString] literal.
      */
-    val jsonString: JsonString get() = error("Expected JsonString, but was $this")
+    val string: String get() = error("Expected JsonString, but was $this")
 
     /**
-     * Returns the JSON number if this element is a JSON number, or throws an error otherwise.
+     * The Boolean value of this element, or throws an error if this element is not a [JsonBoolean] literal.
+     */
+    val boolean: Boolean get() = error("Expected JsonBoolean, but was $this")
+
+    /**
+     * The Number value of this element, or throws an error if this element is not a [JsonNumber] literal.
+     */
+    val number: Number get() = error("Expected JsonNumber, but was $this")
+
+    /**
+     * The Numeric value of this element converted to an Int, or throws an error if this element is not a [JsonNumber] literal.
+     */
+    val int: Int get() = number.toInt()
+
+    /**
+     * The Numeric value of this element converted to a Long, or throws an error if this element is not a [JsonNumber] literal.
+     */
+    val long: Long get() = number.toLong()
+
+    /**
+     * The Numeric value of this element converted to a Float, or throws an error if this element is not a [JsonNumber] literal.
+     */
+    val float: Float get() = number.toFloat()
+
+    /**
+     * The Numeric value of this element converted to a Double, or throws an error if this element is not a [JsonNumber] literal.
+     */
+    val double: Double get() = number.toDouble()
+
+    /**
+     * The Numeric value of this element, or throws an error if this element is not a [JsonNumber] literal.
      */
     val jsonNumber: JsonNumber get() = error("Expected JsonNumber, but was $this")
-
-    /**
-     * Returns the JSON boolean if this element is a JSON boolean, or throws an error otherwise.
-     */
-    val jsonBoolean: JsonBoolean get() = error("Expected JsonBoolean, but was $this")
 
     /**
      * Returns true if this element is null, false otherwise.
@@ -67,62 +115,18 @@ sealed interface JsonLiteral : JsonElement
 
 /**
  * Represents a JSON string literal.
- * @property value The string value.
+ * @property string The string value.
  */
-data class JsonString(val value: String) : JsonLiteral {
-    override val jsonStringOrNull: JsonString get() = this
-    override val jsonString: JsonString get() = this
+data class JsonString(override val string: String) : JsonLiteral {
+    override val stringOrNull get() = string
+
+    override fun toString() = """JsonString("$string")"""
 }
 
 /**
  * Represents a JSON number literal.
  */
 sealed interface JsonNumber : JsonLiteral {
-    /**
-     * Returns the value as a [Number].
-     */
-    fun toNumber(): Number
-
-    /**
-     * Returns the value as a [Double], possibly losing precision.
-     */
-    fun toDouble(): Double
-
-    /**
-     * Returns the value as a [Float], possibly losing precision.
-     */
-    fun toFloat(): Float
-
-    /**
-     * Returns the value as an [Int], possibly truncating the value or overflowing.
-     */
-    fun toInt(): Int
-
-    /**
-     * Returns the value as a [Long], possibly truncating the value or overflowing.
-     */
-    fun toLong(): Long
-
-    /**
-     * Returns the value as an [Int], or null if the value cannot be represented as an [Int].
-     */
-    fun toIntOrNull(): Int?
-
-    /**
-     * Returns the value as a [Long], or null if the value cannot be represented as a [Long].
-     */
-    fun toLongOrNull(): Long?
-
-    /**
-     * Returns the value as a [Float], or null if the value cannot be represented as a [Float].
-     */
-    fun toFloatOrNull(): Float?
-
-    /**
-     * Returns the value as a [Double], or null if the value cannot be represented as a [Double].
-     */
-    fun toDoubleOrNull(): Double?
-
     companion object {
         /**
          * Creates a [JsonNumber] from a [Short]. The value will be represented as an [Int].
@@ -151,50 +155,72 @@ sealed interface JsonNumber : JsonLiteral {
     }
 }
 
-private sealed class AbstractJsonNumber<T : Number> : JsonNumber {
-    abstract val value: T
-    override val jsonNumberOrNull: JsonNumber get() = this
+private sealed class AbstractJsonNumber : JsonNumber {
     override val jsonNumber: JsonNumber get() = this
-    override fun toDouble() = value.toDouble()
-    override fun toFloat() = value.toFloat()
-    override fun toInt() = value.toInt()
-    override fun toLong() = value.toLong()
+    override val jsonNumberOrNull: JsonNumber? get() = this
+    override val numberOrNull: Number? get() = number
+    abstract override val number: Number
 
-    override fun toIntOrNull(): Int? = null
-    override fun toLongOrNull(): Long? = null
-    override fun toFloatOrNull(): Float? = null
-    override fun toDoubleOrNull(): Double? = null
-    override fun toNumber(): Number = value
-
-    override fun toString() = value.toString()
+    override fun toString() = "JsonNumber($number)"
 }
 
-private data class JsonInt(override val value: Int) : AbstractJsonNumber<Int>() {
-    override fun toIntOrNull() = value
-    override fun toLongOrNull() = value.toLong()
+private data class JsonInt(override val int: Int) : AbstractJsonNumber() {
+    override val number: Int get() = int
+    override val intOrNull: Int? get() = int
 }
 
-private data class JsonLong(override val value: Long) : AbstractJsonNumber<Long>() {
-    override fun toIntOrNull() = if (value in Int.MIN_VALUE..Int.MAX_VALUE) value.toInt() else null
-    override fun toLongOrNull() = value
+private data class JsonLong(override val long: Long) : AbstractJsonNumber() {
+    override val number: Long get() = long
+    override val longOrNull: Long? get() = long
 }
 
-private data class JsonFloat(override val value: Float) : AbstractJsonNumber<Float>() {
-    override fun toFloatOrNull() = value
-    override fun toDoubleOrNull() = value.toDouble()
+private data class JsonFloat(override val float: Float) : AbstractJsonNumber() {
+    override val number: Float get() = float
+    override val floatOrNull: Float? get() = float
 }
 
-private data class JsonDouble(override val value: Double) : AbstractJsonNumber<Double>() {
-    override fun toDoubleOrNull() = value
+private data class JsonDouble(override val double: Double) : AbstractJsonNumber() {
+    override val number: Double get() = double
+    override val doubleOrNull: Double? get() = double
 }
 
-data class JsonBoolean(val value: Boolean) : JsonLiteral {
-    override val jsonBooleanOrNull: JsonBoolean get() = this
-    override val jsonBoolean: JsonBoolean get() = this
+
+/**
+ * Represents a JSON boolean literal.
+ */
+sealed class JsonBoolean : JsonLiteral {
+    override val booleanOrNull get() = boolean
+
+    override fun toString() = "JsonBoolean($boolean)"
+    override fun equals(other: Any?) = this === other
+    override fun hashCode() = boolean.hashCode()
+
+    /**
+     * Represents a JSON boolean literal with the value `false`.
+     */
+    data object False : JsonBoolean() {
+        override val boolean = false
+    }
+
+    /**
+     * Represents a JSON boolean literal with the value `true`.
+     */
+    data object True : JsonBoolean() {
+        override val boolean = true
+    }
+
+    companion object {
+        /**
+         * Creates a [JsonBoolean] from a [Boolean].
+         */
+        operator fun invoke(value: Boolean): JsonBoolean = if (value) True else False
+    }
 }
 
+/**
+ * Represents a JSON null literal.
+ */
 data object JsonNull : JsonLiteral {
-    val value: Nothing? = null
     override val isNull get() = true
 }
 
@@ -204,117 +230,117 @@ data object JsonNull : JsonLiteral {
 @TinkrJsonDsl
 data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     /**
-     * Sets the value of the JSON element to a string.
+     * Sets the value of the [jsonElement] to a [JsonString] with the given value.
      */
     @TinkrJsonDsl
     fun set(value: String) {
-        jsonElement = JsonString(value)
+        jsonElement = value.toJsonString()
     }
 
     /**
-     * Sets the value of the JSON element to an integer.
+     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
      */
     @TinkrJsonDsl
     fun set(value: Int) {
-        jsonElement = JsonInt(value)
+        jsonElement = value.toJsonNumber()
     }
 
     /**
-     * Sets the value of the JSON element to a long.
+     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
      */
     @TinkrJsonDsl
     fun set(value: Long) {
-        jsonElement = JsonLong(value)
+        jsonElement = value.toJsonNumber()
     }
 
     /**
-     * Sets the value of the JSON element to a float.
+     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
      */
     @TinkrJsonDsl
     fun set(value: Float) {
-        jsonElement = JsonFloat(value)
+        jsonElement = value.toJsonNumber()
     }
 
     /**
-     * Sets the value of the JSON element to a double.
+     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
      */
     @TinkrJsonDsl
     fun set(value: Double) {
-        jsonElement = JsonDouble(value)
+        jsonElement = value.toJsonNumber()
     }
 
     /**
-     * Sets the value of the JSON element to a boolean.
+     * Sets the value of the [jsonElement] to a [JsonBoolean] with the given value.
      */
     @TinkrJsonDsl
     fun set(value: Boolean) {
-        jsonElement = JsonBoolean(value)
+        jsonElement = value.toJsonBoolean()
     }
 
     /**
-     * Sets the value of the JSON element to a string, or null if the value is null.
+     * Sets the value of the [jsonElement] to a [JsonString], or [JsonNull] if the value is null.
      */
     @JvmName("setNullableString")
     @TinkrJsonDsl
     fun set(value: String?) {
-        value?.let(::set) ?: setNull()
+        set(value.toJsonStringOrNull())
     }
 
     /**
-     * Sets the value of the JSON element to an integer, or null if the value is null.
+     * Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
      */
     @JvmName("setNullableInt")
     @TinkrJsonDsl
     fun set(value: Int?) {
-        value?.let(::set) ?: setNull()
+        set(value.toJsonNumberOrNull())
     }
 
     /**
-     * Sets the value of the JSON element to a long, or null if the value is null.
+     * Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
      */
     @JvmName("setNullableLong")
     @TinkrJsonDsl
     fun set(value: Long?) {
-        value?.let(::set) ?: setNull()
+        set(value.toJsonNumberOrNull())
     }
 
     /**
-     * Sets the value of the JSON element to a float, or null if the value is null.
+     * Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
      */
     @JvmName("setNullableFloat")
     @TinkrJsonDsl
     fun set(value: Float?) {
-        value?.let(::set) ?: setNull()
+        set(value.toJsonNumberOrNull())
     }
 
     /**
-     * Sets the value of the JSON element to a double, or null if the value is null.
+     *  Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
      */
     @JvmName("setNullableDouble")
     @TinkrJsonDsl
     fun set(value: Double?) {
-        value?.let(::set) ?: setNull()
+        set(value.toJsonNumberOrNull())
     }
 
     /**
-     * Sets the value of the JSON element to a boolean, or null if the value is null.
+     * Sets the value of the [jsonElement] to a [JsonBoolean], or [JsonNull] if the value is null.
      */
     @JvmName("setNullableBoolean")
     @TinkrJsonDsl
     fun set(value: Boolean?) {
-        value?.let(::set) ?: setNull()
+        set(value.toJsonBooleanOrNull())
     }
 
     /**
-     * Sets the value of the JSON element to null.
+     * Sets the value of the [jsonElement] to [JsonNull].
      */
     @TinkrJsonDsl
     fun setNull() {
-        set(JsonNull)
+        jsonElement = JsonNull
     }
 
     /**
-     * Sets the value to the given JSON element.
+     * Sets the value of the [jsonElement] to the given [JsonElement].
      */
     @TinkrJsonDsl
     fun set(element: JsonElement) {
@@ -322,19 +348,23 @@ data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
     }
 
     /**
-     * Sets the value to a JSON array.
+     * Sets the value to a new [JsonArray], and applies the given [build] block to it.
      */
     @TinkrJsonDsl
-    inline fun setArray(build: JsonArray.() -> Unit = {}) {
+    inline fun makeArray(build: JsonArray.() -> Unit = {}) {
         jsonElement = JsonArray().apply(build)
     }
 
     /**
-     * Sets the value to a JSON object.
+     * Sets the value to a new [JsonObject], and applies the given [build] block to it.
      */
     @TinkrJsonDsl
-    inline fun setObject(build: JsonObject.() -> Unit = {}) {
+    inline fun makeObject(build: JsonObject.() -> Unit = {}) {
         jsonElement = JsonObject()
+    }
+
+    override fun toString(): String {
+        return "JsonRoot($jsonElement)"
     }
 }
 
@@ -347,22 +377,22 @@ class JsonObject private constructor(
     unit: Unit = Unit,
 ) : JsonElement, MutableMap<String, JsonElement> by content {
     /**
-     * Creates an empty JSON object.
+     * Creates an empty [JsonObject].
      */
     constructor() : this(mutableMapOf())
 
     /**
-     * Creates a JSON object from the given key-value pairs.
+     * Creates a [JsonObject] from the given key-value pairs.
      */
     constructor(vararg pairs: Pair<String, JsonElement>) : this(mutableMapOf(*pairs))
 
     /**
-     * Creates a JSON object from the given key-value pairs.
+     * Creates a [JsonObject] from the given key-value pairs.
      */
     constructor(pairs: Iterable<Pair<String, JsonElement>>) : this(pairs.toMap().toMutableMap())
 
     /**
-     * Creates a JSON object from the given map. The map is shallow-copied.
+     * Creates a [JsonObject] from the given map.
      */
     constructor(map: Map<String, JsonElement>) : this(map.toMutableMap())
 
@@ -624,7 +654,7 @@ class JsonObject private constructor(
      */
     @TinkrJsonDsl
     operator fun set(key: String, value: Boolean?) {
-        content[key] = value?.let(::JsonBoolean) ?: JsonNull
+        content[key] = value?.let { JsonBoolean(it) } ?: JsonNull
     }
 
 
@@ -682,7 +712,6 @@ class JsonObject private constructor(
         map.forEach { (key, value) -> key(value) }
     }
 
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is JsonObject) return false
@@ -692,6 +721,10 @@ class JsonObject private constructor(
 
     override fun hashCode(): Int {
         return content.hashCode()
+    }
+
+    override fun toString(): String {
+        return "JsonObject({${content.entries.joinToString(", ") { (key, value) -> "\"$key\": $value" }}})"
     }
 }
 
@@ -711,7 +744,7 @@ class JsonArray(
      */
     @TinkrJsonDsl
     operator fun set(index: Int, value: String?) {
-        content[index] = value?.let(::JsonString) ?: JsonNull
+        content[index] = value.toJsonStringOrNull()
     }
 
     /**
@@ -719,7 +752,7 @@ class JsonArray(
      */
     @TinkrJsonDsl
     operator fun set(index: Int, value: Int?) {
-        content[index] = value?.let(::JsonInt) ?: JsonNull
+        content[index] = value.toJsonNumberOrNull()
     }
 
     /**
@@ -727,7 +760,7 @@ class JsonArray(
      */
     @TinkrJsonDsl
     operator fun set(index: Int, value: Long?) {
-        content[index] = value?.let(::JsonLong) ?: JsonNull
+        content[index] = value.toJsonNumberOrNull()
     }
 
     /**
@@ -735,7 +768,7 @@ class JsonArray(
      */
     @TinkrJsonDsl
     operator fun set(index: Int, value: Float?) {
-        content[index] = value?.let(::JsonFloat) ?: JsonNull
+        content[index] = value.toJsonNumberOrNull()
     }
 
     /**
@@ -743,7 +776,7 @@ class JsonArray(
      */
     @TinkrJsonDsl
     operator fun set(index: Int, value: Double?) {
-        content[index] = value?.let(::JsonDouble) ?: JsonNull
+        content[index] = value.toJsonNumberOrNull()
     }
 
     /**
@@ -751,44 +784,44 @@ class JsonArray(
      */
     @TinkrJsonDsl
     operator fun set(index: Int, value: Boolean?) {
-        content[index] = value?.let(::JsonBoolean) ?: JsonNull
+        content[index] = value?.let { JsonBoolean(it) } ?: JsonNull
     }
 
     /**
      * Adds a string to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: String?) = content.add(value?.let(::JsonString) ?: JsonNull)
+    fun add(value: String?) = content.add(value.toJsonStringOrNull())
 
     /**
      * Adds an integer to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Int?) = content.add(value?.let(::JsonInt) ?: JsonNull)
+    fun add(value: Int?) = content.add(value.toJsonNumberOrNull())
 
     /**
      * Adds a long to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Long?) = content.add(value?.let(::JsonLong) ?: JsonNull)
+    fun add(value: Long?) = content.add(value.toJsonNumberOrNull())
 
     /**
      * Adds a float to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Float?) = content.add(value?.let(::JsonFloat) ?: JsonNull)
+    fun add(value: Float?) = content.add(value.toJsonNumberOrNull())
 
     /**
      * Adds a double to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Double?) = content.add(value?.let(::JsonDouble) ?: JsonNull)
+    fun add(value: Double?) = content.add(value.toJsonNumberOrNull())
 
     /**
      * Adds a boolean to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Boolean?) = content.add(value?.let(::JsonBoolean) ?: JsonNull)
+    fun add(value: Boolean?) = content.add(value.toJsonBooleanOrNull())
 
     /**
      * Adds a new JsonObject to the array, and applies the given [build] block to it.
@@ -985,37 +1018,37 @@ class JsonArray(
      * Creates a shallow copy of this array, with the given element added to the end.
      */
     @TinkrJsonDsl
-    operator fun plus(value: String?) = JsonArray(content + value.toJsonString())
+    operator fun plus(value: String?) = JsonArray(content + value.toJsonStringOrNull())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
     @TinkrJsonDsl
-    operator fun plus(value: Int?) = JsonArray(content + value.toJsonNumber())
+    operator fun plus(value: Int?) = JsonArray(content + value.toJsonNumberOrNull())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
     @TinkrJsonDsl
-    operator fun plus(value: Long?) = JsonArray(content + value.toJsonNumber())
+    operator fun plus(value: Long?) = JsonArray(content + value.toJsonNumberOrNull())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
     @TinkrJsonDsl
-    operator fun plus(value: Float?) = JsonArray(content + value.toJsonNumber())
+    operator fun plus(value: Float?) = JsonArray(content + value.toJsonNumberOrNull())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
     @TinkrJsonDsl
-    operator fun plus(value: Double?) = JsonArray(content + value.toJsonNumber())
+    operator fun plus(value: Double?) = JsonArray(content + value.toJsonNumberOrNull())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
      */
     @TinkrJsonDsl
-    operator fun plus(value: Boolean?) = JsonArray(content + value.toJsonBoolean())
+    operator fun plus(value: Boolean?) = JsonArray(content + value.toJsonBooleanOrNull())
 
     /**
      * Creates a shallow copy of this array, with the given element added to the end.
@@ -1028,42 +1061,42 @@ class JsonArray(
      */
     @JvmName("plusStrings")
     @TinkrJsonDsl
-    operator fun plus(values: Iterable<String?>) = JsonArray(content + values.map { it.toJsonString() })
+    operator fun plus(values: Iterable<String?>) = JsonArray(content + values.map { it.toJsonStringOrNull() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusInts")
     @TinkrJsonDsl
-    operator fun plus(values: Iterable<Int?>) = JsonArray(content + values.map { it.toJsonNumber() })
+    operator fun plus(values: Iterable<Int?>) = JsonArray(content + values.map { it.toJsonNumberOrNull() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusLongs")
     @TinkrJsonDsl
-    operator fun plus(values: Iterable<Long?>) = JsonArray(content + values.map { it.toJsonNumber() })
+    operator fun plus(values: Iterable<Long?>) = JsonArray(content + values.map { it.toJsonNumberOrNull() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusFloats")
     @TinkrJsonDsl
-    operator fun plus(values: Iterable<Float?>) = JsonArray(content + values.map { it.toJsonNumber() })
+    operator fun plus(values: Iterable<Float?>) = JsonArray(content + values.map { it.toJsonNumberOrNull() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusDoubles")
     @TinkrJsonDsl
-    operator fun plus(values: Iterable<Double?>) = JsonArray(content + values.map { it.toJsonNumber() })
+    operator fun plus(values: Iterable<Double?>) = JsonArray(content + values.map { it.toJsonNumberOrNull() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
      */
     @JvmName("plusBooleans")
     @TinkrJsonDsl
-    operator fun plus(values: Iterable<Boolean?>) = JsonArray(content + values.map { it.toJsonBoolean() })
+    operator fun plus(values: Iterable<Boolean?>) = JsonArray(content + values.map { it.toJsonBooleanOrNull() })
 
     /**
      * Creates a shallow copy of this array, with the given elements added to the end.
@@ -1089,174 +1122,185 @@ class JsonArray(
 
 /**
  * Convert this [Iterable] to a [JsonArray].
+ * The non-null elements will be converted to [JsonString]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("stringsToJsonArray")
-fun Iterable<String?>.toJsonArray() = JsonArray(map { it.toJsonString() })
+fun Iterable<String?>.toJsonArray() = JsonArray(map { it.toJsonStringOrNull() })
 
 /**
  * Convert this [Iterable] to a [JsonArray].
+ * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("intsToJsonArray")
-fun Iterable<Int?>.toJsonArray() = JsonArray(map { it.toJsonNumber() })
+fun Iterable<Int?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
 
 /**
  * Convert this [Iterable] to a [JsonArray].
+ * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("longsToJsonArray")
-fun Iterable<Long?>.toJsonArray() = JsonArray(map { it.toJsonNumber() })
+fun Iterable<Long?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
 
 /**
  * Convert this [Iterable] to a [JsonArray].
+ * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("floatsToJsonArray")
-fun Iterable<Float?>.toJsonArray() = JsonArray(map { it.toJsonNumber() })
+fun Iterable<Float?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
 
 /**
  * Convert this [Iterable] to a [JsonArray].
+ * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("doublesToJsonArray")
-fun Iterable<Double?>.toJsonArray() = JsonArray(map { it.toJsonNumber() })
+fun Iterable<Double?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
 
 /**
  * Convert this [Iterable] to a [JsonArray].
+ * The non-null elements will be converted to [JsonBoolean]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("booleansToJsonArray")
-fun Iterable<Boolean?>.toJsonArray() = JsonArray(map { it.toJsonBoolean() })
+fun Iterable<Boolean?>.toJsonArray() = JsonArray(map { it.toJsonBooleanOrNull() })
 
 /**
  * Convert this [Iterable] to a [JsonArray].
+ * The elements will be used as-is.
  */
 @JvmName("iterableToJsonArray")
 fun Iterable<JsonElement>.toJsonArray() = JsonArray(this)
 
 /**
  * Convert this [Map] to a [JsonObject].
+ * The non-null values will be converted to [JsonString]s. Null values will be converted to [JsonNull].
  */
 @JvmName("stringsToJsonObject")
-fun Map<String, String?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonString() })
+fun Map<String, String?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonStringOrNull() })
 
 /**
  * Convert this [Map] to a [JsonObject].
+ * The non-null values will be converted to [JsonNumber]s. Null values will be converted to [JsonNull].
  */
 @JvmName("intsToJsonObject")
-fun Map<String, Int?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumber() })
+fun Map<String, Int?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumberOrNull() })
 
 /**
  * Convert this [Map] to a [JsonObject].
+ * The non-null values will be converted to [JsonNumber]s. Null values will be converted to [JsonNull].
  */
 @JvmName("longsToJsonObject")
-fun Map<String, Long?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumber() })
+fun Map<String, Long?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumberOrNull() })
 
 /**
  * Convert this [Map] to a [JsonObject].
+ * The non-null values will be converted to [JsonNumber]s. Null values will be converted to [JsonNull].
  */
 @JvmName("floatsToJsonObject")
-fun Map<String, Float?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumber() })
+fun Map<String, Float?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumberOrNull() })
 
 /**
  * Convert this [Map] to a [JsonObject].
+ * The non-null values will be converted to [JsonNumber]s. Null values will be converted to [JsonNull].
  */
 @JvmName("doublesToJsonObject")
-fun Map<String, Double?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumber() })
+fun Map<String, Double?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonNumberOrNull() })
 
 /**
  * Convert this [Map] to a [JsonObject].
+ * The non-null values will be converted to [JsonBoolean]s. Null values will be converted to [JsonNull].
  */
 @JvmName("booleansToJsonObject")
-fun Map<String, Boolean?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonBoolean() })
+fun Map<String, Boolean?>.toJsonObject() = JsonObject(mapValues { (_, value) -> value.toJsonBooleanOrNull() })
 
 /**
  * Convert this [Map] to a [JsonObject].
+ * The values will be used as-is.
  */
 @JvmName("mapToJsonObject")
 fun Map<String, JsonElement>.toJsonObject() = JsonObject(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return Either a [JsonString] or [JsonNull].
+ * Convert the receiver to either a [JsonString] or [JsonNull].
  */
-fun String?.toJsonString(): JsonElement = this?.let(::JsonString) ?: JsonNull
+fun String?.toJsonStringOrNull(): JsonElement = this?.let { JsonString(it) } ?: JsonNull
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return Either a [JsonNumber] or [JsonNull].
+ * Convert the receiver to either a [JsonNumber] or [JsonNull].
  */
-fun Short?.toJsonNumber(): JsonElement = this?.toInt()?.let { JsonInt(it) } ?: JsonNull
+fun Short?.toJsonNumberOrNull(): JsonElement = this?.toInt()?.let { JsonNumber(it) } ?: JsonNull
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return Either a [JsonNumber] or [JsonNull].
+ * Convert the receiver to either a [JsonNumber] or [JsonNull].
  */
-fun Int?.toJsonNumber(): JsonElement = this?.let { JsonInt(it) } ?: JsonNull
+fun Int?.toJsonNumberOrNull(): JsonElement = this?.let { JsonNumber(it) } ?: JsonNull
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return Either a [JsonNumber] or [JsonNull].
+ * Convert the receiver to either a [JsonNumber] or [JsonNull].
  */
-fun Long?.toJsonNumber(): JsonElement = this?.let { JsonLong(it) } ?: JsonNull
+fun Long?.toJsonNumberOrNull(): JsonElement = this?.let { JsonNumber(it) } ?: JsonNull
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return Either a [JsonNumber] or [JsonNull].
+ * Convert the receiver to either a [JsonNumber] or [JsonNull].
  */
-fun Float?.toJsonNumber(): JsonElement = this?.let { JsonFloat(it) } ?: JsonNull
+fun Float?.toJsonNumberOrNull(): JsonElement = this?.let { JsonNumber(it) } ?: JsonNull
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return Either a [JsonNumber] or [JsonNull].
+ * Convert the receiver to either a [JsonNumber] or [JsonNull].
  */
-fun Double?.toJsonNumber(): JsonElement = this?.let { JsonDouble(it) } ?: JsonNull
+fun Double?.toJsonNumberOrNull(): JsonElement = this?.let { JsonNumber(it) } ?: JsonNull
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return Either a [JsonBoolean] or [JsonNull].
+ * Convert the receiver to either a [JsonBoolean] or [JsonNull].
  */
-fun Boolean?.toJsonBoolean(): JsonElement = this?.let(::JsonBoolean) ?: JsonNull
+fun Boolean?.toJsonBooleanOrNull(): JsonElement = when (this) {
+    true -> JsonBoolean.True
+    false -> JsonBoolean.False
+    null -> JsonNull
+}
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonString].
+ * Convert the receiver to a [JsonString].
  */
 fun String.toJsonString() = JsonString(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonNumber].
+ * Convert the receiver to a [JsonNumber].
  */
 fun Short.toJsonNumber() = JsonNumber(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonNumber].
+ * Convert the receiver to a [JsonNumber].
  */
 fun Int.toJsonNumber() = JsonNumber(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonNumber].
+ * Convert the receiver to a [JsonNumber].
  */
 fun Long.toJsonNumber() = JsonNumber(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonNumber].
+ * Convert the receiver to a [JsonNumber].
  */
 fun Float.toJsonNumber() = JsonNumber(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonNumber].
+ * Convert the receiver to a [JsonNumber].
  */
 fun Double.toJsonNumber() = JsonNumber(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonBoolean].
+ * Convert the receiver to a [JsonNumber].
  */
 fun Boolean.toJsonBoolean() = JsonBoolean(this)
 
 /**
- * Convert the receiver to a [JsonElement].
- * @return [JsonString].
+ * Convert the `null` receiver to a [JsonNull].
  */
-fun Nothing?.toJsonNull(): JsonElement = this ?: JsonNull
+fun Nothing?.toJsonNull() = JsonNull
+
+
+///**
+// * Makes a deep copy of this element. Throws an error on circular references.
+// * If the same element is encountered multiple times, it will be copied multiple times, not shared. This results in a
+// * tree of elements where each [JsonObject] and [JsonArray] is unique.
+// */
+//fun deepCopy(element: JsonElement): JsonElement = TODO()

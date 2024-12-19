@@ -2,6 +2,11 @@ package com.stochastictinkr.json.parsing
 
 import com.stochastictinkr.json.*
 
+/**
+ * A lexer for JSON input.
+ *
+ * @property input The input character sequence to be lexed.
+ */
 internal class JsonLexer(private val input: CharSequence) {
     var position: Int = 0
         private set
@@ -10,15 +15,34 @@ internal class JsonLexer(private val input: CharSequence) {
     var column: Int = 1
         private set
 
+    /**
+     * Peeks at the current character without advancing the position.
+     *
+     * @return The current character or null if at the end of input.
+     */
     fun peek(): Char? = if (position < input.length) input[position] else null
 
+    /**
+     * Advances the position by one character, if possible.
+     *
+     * @return The current character or null if at the end of input.
+     */
     private fun advanceOrNull(): Char? = peek()?.also {
         position++
         column++
     }
 
+    /**
+     * Advances the position by one character, or calls the provided function if at the end of input.
+     *
+     * @param onEof The function to call if at the end of input.
+     * @return The current character.
+     */
     private fun advance(onEof: () -> Nothing): Char = advanceOrNull() ?: onEof()
 
+    /**
+     * Skips over any whitespace characters.
+     */
     fun skipWhitespace() {
         while (true) {
             val ch = peek()
@@ -39,6 +63,12 @@ internal class JsonLexer(private val input: CharSequence) {
         }
     }
 
+    /**
+     * Matches the current character against the expected character.
+     *
+     * @param expected The character to match.
+     * @return True if the current character matches the expected character, false otherwise.
+     */
     fun match(expected: Char): Boolean {
         if (peek() == expected) {
             advanceOrNull()
@@ -47,6 +77,11 @@ internal class JsonLexer(private val input: CharSequence) {
         return false
     }
 
+    /**
+     * Parses a JSON string value.
+     *
+     * @return The parsed string value.
+     */
     fun parseStringValue(): String {
         val builder = StringBuilder()
         if (!match('"')) unmatched("'\"'")
@@ -60,6 +95,11 @@ internal class JsonLexer(private val input: CharSequence) {
         }
     }
 
+    /**
+     * Parses a JSON escape sequence.
+     *
+     * @return The parsed escape character.
+     */
     private fun parseEscapeSequence(): Char {
         return when (val ch = advance { unmatched("string content") }) {
             '"' -> '"'
@@ -75,6 +115,11 @@ internal class JsonLexer(private val input: CharSequence) {
         }
     }
 
+    /**
+     * Parses a Unicode escape sequence.
+     *
+     * @return The parsed Unicode character.
+     */
     private fun parseUnicodeEscape(): Char {
         var value = 0
         repeat(4) {
@@ -89,6 +134,11 @@ internal class JsonLexer(private val input: CharSequence) {
         return value.toChar()
     }
 
+    /**
+     * Parses a JSON number.
+     *
+     * @return The parsed number as a JsonNumber.
+     */
     private fun parseNumber(): JsonNumber {
         val start = position
         val startColumn = column
@@ -119,7 +169,14 @@ internal class JsonLexer(private val input: CharSequence) {
             ?: throw IllegalArgumentException("Invalid number at $line:$startColumn")
     }
 
-    private fun parseLiteral(expected: String, result: JsonElement): JsonElement {
+    /**
+     * Parses a JSON literal.
+     *
+     * @param expected The expected literal string.
+     * @param result The result to return if the literal matches.
+     * @return The parsed JSON element.
+     */
+    private fun parseLiteral(expected: String, result: JsonLiteral): JsonLiteral {
         val currentColumn = column
         for (char in expected) {
             require(match(char)) { "Expected '$expected' at $line:$currentColumn" }
@@ -127,7 +184,12 @@ internal class JsonLexer(private val input: CharSequence) {
         return result
     }
 
-    fun takeLiteral() = when (val ch = peek()) {
+    /**
+     * Takes a JSON literal from the input.
+     *
+     * @return The parsed JSON element.
+     */
+    fun takeLiteral() = when (peek()) {
         '"' -> JsonString(parseStringValue())
         '+', '-', in '0'..'9' -> parseNumber()
         't' -> parseLiteral("true", JsonBoolean(true))
@@ -136,6 +198,12 @@ internal class JsonLexer(private val input: CharSequence) {
         else -> unmatched("'\"', number, 'true', 'false', or 'null'")
     }
 
+    /**
+     * Throws an exception for unmatched input.
+     *
+     * @param expected The expected input description.
+     * @throws IllegalArgumentException Always thrown with a message indicating the unexpected input.
+     */
     fun unmatched(expected: String): Nothing {
         val current = peek()
         val message = if (current == null) {
@@ -146,15 +214,42 @@ internal class JsonLexer(private val input: CharSequence) {
         throw IllegalArgumentException("Unexpected $message. Expected $expected at $line:$column")
     }
 
+    /**
+     * Expects a specific JSON element.
+     *
+     * @param expected The expected element.
+     * @return The parsed element.
+     */
     fun <E> expect(expected: Expectation<E>): E = expected.run { this@JsonLexer() }
 }
 
-
+/**
+ * An interface representing an expectation that can be invoked on a JsonLexer.
+ *
+ * @param E The type of the result produced by the expectation.
+ */
 internal interface Expectation<E> {
+    /**
+     * Invokes the expectation on the given JsonLexer.
+     *
+     * @receiver The JsonLexer on which the expectation is invoked.
+     * @return The result of the expectation, if successful.
+     * @throws IllegalArgumentException If the expectation is not met.
+     */
     operator fun JsonLexer.invoke(): E
 }
 
+/**
+ * Represents the one of the following tokens:
+ * - An object start token `{`
+ * - An array start token `[`
+ * - A literal token
+ */
 internal sealed interface ElementStart : ElementStartOrArrayEnd {
+
+    /**
+     * An expectation that the next token is an element start.
+     */
     companion object : Expectation<ElementStart> {
         override fun JsonLexer.invoke(): ElementStart {
             skipWhitespace()
@@ -167,7 +262,16 @@ internal sealed interface ElementStart : ElementStartOrArrayEnd {
     }
 }
 
+/**
+ * Represents the one of the following tokens:
+ * - A key in an object `"key":`
+ * - The end of an object `}`
+ */
 internal sealed interface KeyOrObjectEnd {
+
+    /**
+     * An expectation that the next token is a key or the end of an object.
+     */
     companion object : Expectation<KeyOrObjectEnd> {
         override fun JsonLexer.invoke(): KeyOrObjectEnd {
             skipWhitespace()
@@ -184,7 +288,16 @@ internal sealed interface KeyOrObjectEnd {
     }
 }
 
+/**
+ * Represents the one of the following tokens:
+ * - A comma `,`
+ * - The end of an object `}`
+ */
 internal sealed interface CommaOrObjectEnd {
+
+    /**
+     * An expectation that the next token is a comma or the end of an object.
+     */
     companion object : Expectation<CommaOrObjectEnd> {
         override fun JsonLexer.invoke(): CommaOrObjectEnd {
             skipWhitespace()
@@ -197,7 +310,16 @@ internal sealed interface CommaOrObjectEnd {
     }
 }
 
+/**
+ * Represents the one of the following tokens:
+ * - The end of an array `]`
+ * - An element start token
+ */
 internal sealed interface ElementStartOrArrayEnd {
+
+    /**
+     * An expectation that the next token is an element start or the end of an array.
+     */
     companion object : Expectation<ElementStartOrArrayEnd> {
         override fun JsonLexer.invoke(): ElementStartOrArrayEnd {
             skipWhitespace()
@@ -209,7 +331,16 @@ internal sealed interface ElementStartOrArrayEnd {
     }
 }
 
+/**
+ * Represents the one of the following tokens:
+ * - A comma `,`
+ * - The end of an array `]`
+ */
 internal sealed interface CommaOrArrayEnd {
+
+    /**
+     * An expectation that the next token is a comma or the end of an array.
+     */
     companion object : Expectation<CommaOrArrayEnd> {
         override fun JsonLexer.invoke(): CommaOrArrayEnd {
             skipWhitespace()
@@ -222,7 +353,14 @@ internal sealed interface CommaOrArrayEnd {
     }
 }
 
+/**
+ * Represents a key in a JSON object. `"key":`
+ */
 internal data class Key(val key: String) : KeyOrObjectEnd {
+
+    /**
+     * Expects a string literal, followed by a colon, returning the Key token.
+     */
     companion object : Expectation<Key> {
         override fun JsonLexer.invoke(): Key {
             skipWhitespace()
@@ -234,14 +372,41 @@ internal data class Key(val key: String) : KeyOrObjectEnd {
     }
 }
 
-internal data object ObjectStart : ElementStart, ElementStartOrArrayEnd {}
+/**
+ * Represents the start of a JSON object `{`.
+ */
+internal data object ObjectStart : ElementStart, ElementStartOrArrayEnd
+
+/**
+ * Represents the end of a JSON object `}`.
+ */
 internal data object ObjectEnd : KeyOrObjectEnd, CommaOrObjectEnd
+
+/**
+ * Represents the start of a JSON array `[`.
+ */
 internal data object ArrayStart : ElementStart, ElementStartOrArrayEnd
+
+/**
+ * Represents the end of a JSON array `]`.
+ */
 internal data object ArrayEnd : CommaOrArrayEnd, ElementStartOrArrayEnd
 
+/**
+ * Represents a comma `,`.
+ */
 internal data object Comma : CommaOrObjectEnd, CommaOrArrayEnd
-internal data class Literal(val literal: JsonElement) : ElementStart, ElementStartOrArrayEnd
 
+/**
+ * Represents a JSON literal.
+ *
+ * @property literal The literal value.
+ */
+internal data class Literal(val literal: JsonLiteral) : ElementStart, ElementStartOrArrayEnd
+
+/**
+ * This is an expectation that there is no more non-whitespace input.
+ */
 internal data object EndOfInput : Expectation<Unit> {
     override fun JsonLexer.invoke() {
         skipWhitespace()

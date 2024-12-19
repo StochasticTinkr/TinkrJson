@@ -96,9 +96,9 @@ sealed class JsonWriter(private val pretty: Boolean) {
         fun writeLiteral(literal: JsonLiteral) {
             when (literal) {
                 is JsonNull -> output.append("null")
-                is JsonBoolean -> output.append(literal.value.toString())
-                is JsonNumber -> output.append(literal.toNumber().toString())
-                is JsonString -> writeString(literal.value)
+                is JsonBoolean -> output.append(literal.boolean.toString())
+                is JsonNumber -> output.append(literal.number.toString())
+                is JsonString -> writeString(literal.string)
             }
         }
     }
