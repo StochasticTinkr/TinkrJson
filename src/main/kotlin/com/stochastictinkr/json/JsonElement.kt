@@ -24,7 +24,9 @@ sealed interface JsonElement {
      */
     val booleanOrNull: Boolean? get() = null
 
-
+    /**
+     * The Number value of this element, or null if this element is not a [JsonNumber] literal.
+     */
     val numberOrNull: Number? get() = null
 
     /**
@@ -106,6 +108,16 @@ sealed interface JsonElement {
      * Returns true if this element is null, false otherwise.
      */
     val isNull get() = false
+
+    /**
+     * Makes a deep copy of this element. Throws an error on circular references.
+     *
+     * If the same element is encountered multiple times, it will be copied multiple times, not shared.
+     * This results in a tree of elements where each [JsonObject] and [JsonArray] is a unique instance.
+     *
+     * [JsonLiteral] instances are immutable and may be shared between copies.
+     */
+    fun deepCopy() = this
 }
 
 /**
@@ -222,150 +234,6 @@ sealed class JsonBoolean : JsonLiteral {
  */
 data object JsonNull : JsonLiteral {
     override val isNull get() = true
-}
-
-/**
- * A mutable reference to an arbitrary JsonElement.
- */
-@TinkrJsonDsl
-data class JsonRoot(var jsonElement: JsonElement = JsonNull) {
-    /**
-     * Sets the value of the [jsonElement] to a [JsonString] with the given value.
-     */
-    @TinkrJsonDsl
-    fun set(value: String) {
-        jsonElement = value.toJsonString()
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
-     */
-    @TinkrJsonDsl
-    fun set(value: Int) {
-        jsonElement = value.toJsonNumber()
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
-     */
-    @TinkrJsonDsl
-    fun set(value: Long) {
-        jsonElement = value.toJsonNumber()
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
-     */
-    @TinkrJsonDsl
-    fun set(value: Float) {
-        jsonElement = value.toJsonNumber()
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonNumber] with the given value.
-     */
-    @TinkrJsonDsl
-    fun set(value: Double) {
-        jsonElement = value.toJsonNumber()
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonBoolean] with the given value.
-     */
-    @TinkrJsonDsl
-    fun set(value: Boolean) {
-        jsonElement = value.toJsonBoolean()
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonString], or [JsonNull] if the value is null.
-     */
-    @JvmName("setNullableString")
-    @TinkrJsonDsl
-    fun set(value: String?) {
-        set(value.toJsonStringOrNull())
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
-     */
-    @JvmName("setNullableInt")
-    @TinkrJsonDsl
-    fun set(value: Int?) {
-        set(value.toJsonNumberOrNull())
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
-     */
-    @JvmName("setNullableLong")
-    @TinkrJsonDsl
-    fun set(value: Long?) {
-        set(value.toJsonNumberOrNull())
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
-     */
-    @JvmName("setNullableFloat")
-    @TinkrJsonDsl
-    fun set(value: Float?) {
-        set(value.toJsonNumberOrNull())
-    }
-
-    /**
-     *  Sets the value of the [jsonElement] to a [JsonNumber], or [JsonNull] if the value is null.
-     */
-    @JvmName("setNullableDouble")
-    @TinkrJsonDsl
-    fun set(value: Double?) {
-        set(value.toJsonNumberOrNull())
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to a [JsonBoolean], or [JsonNull] if the value is null.
-     */
-    @JvmName("setNullableBoolean")
-    @TinkrJsonDsl
-    fun set(value: Boolean?) {
-        set(value.toJsonBooleanOrNull())
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to [JsonNull].
-     */
-    @TinkrJsonDsl
-    fun setNull() {
-        jsonElement = JsonNull
-    }
-
-    /**
-     * Sets the value of the [jsonElement] to the given [JsonElement].
-     */
-    @TinkrJsonDsl
-    fun set(element: JsonElement) {
-        jsonElement = element
-    }
-
-    /**
-     * Sets the value to a new [JsonArray], and applies the given [build] block to it.
-     */
-    @TinkrJsonDsl
-    inline fun makeArray(build: JsonArray.() -> Unit = {}) {
-        jsonElement = JsonArray().apply(build)
-    }
-
-    /**
-     * Sets the value to a new [JsonObject], and applies the given [build] block to it.
-     */
-    @TinkrJsonDsl
-    inline fun makeObject(build: JsonObject.() -> Unit = {}) {
-        jsonElement = JsonObject()
-    }
-
-    override fun toString(): String {
-        return "JsonRoot($jsonElement)"
-    }
 }
 
 /**
@@ -712,6 +580,8 @@ class JsonObject private constructor(
         map.forEach { (key, value) -> key(value) }
     }
 
+    override fun deepCopy() = deepCopy(this)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is JsonObject) return false
@@ -788,6 +658,14 @@ class JsonArray(
     }
 
     /**
+     * Sets the value at the given index to a null value.
+     */
+    @TinkrJsonDsl
+    operator fun set(index: Int, value: Nothing?) {
+        content[index] = JsonNull
+    }
+
+    /**
      * Adds a string to the array, or null if the value is null.
      */
     @TinkrJsonDsl
@@ -822,6 +700,12 @@ class JsonArray(
      */
     @TinkrJsonDsl
     fun add(value: Boolean?) = content.add(value.toJsonBooleanOrNull())
+
+    /**
+     * Adds a null value to the array.
+     */
+    @TinkrJsonDsl
+    fun add(value: Nothing?) = content.add(value.toJsonNull())
 
     /**
      * Adds a new JsonObject to the array, and applies the given [build] block to it.
@@ -1118,6 +1002,8 @@ class JsonArray(
     override fun toString(): String {
         return "JsonArray($content)"
     }
+
+    override fun deepCopy() = deepCopy(this)
 }
 
 /**
@@ -1298,9 +1184,49 @@ fun Boolean.toJsonBoolean() = JsonBoolean(this)
 fun Nothing?.toJsonNull() = JsonNull
 
 
-///**
-// * Makes a deep copy of this element. Throws an error on circular references.
-// * If the same element is encountered multiple times, it will be copied multiple times, not shared. This results in a
-// * tree of elements where each [JsonObject] and [JsonArray] is unique.
-// */
-//fun deepCopy(element: JsonElement): JsonElement = TODO()
+/**
+ * Makes a deep copy of this element. Throws an error on circular references.
+ * If the same element is encountered multiple times, it will be copied multiple times, not shared. This results in a
+ * tree of elements where each [JsonObject] and [JsonArray] is unique.
+ */
+fun deepCopy(element: JsonElement) = deepCopy(ElementStack(element))
+
+/**
+ * Makes a deep copy of this element. Throws an error on circular references.
+ * If the same element is encountered multiple times, it will be copied multiple times, not shared. This results in a
+ * tree of elements where each [JsonObject] and [JsonArray] is unique.
+ */
+fun deepCopy(root: JsonRoot) = JsonRoot(deepCopy(root.jsonElement))
+
+private class ElementStack(
+    val element: JsonElement,
+    val parent: ElementStack? = null,
+) {
+    fun push(element: JsonElement): ElementStack {
+        if (element !is JsonLiteral) {
+            require(generateSequence(this) { it.parent }.none { it.element === element }) { "Circular reference detected" }
+        }
+        return ElementStack(element, this)
+    }
+}
+
+private val deepCopy = DeepRecursiveFunction<ElementStack, JsonElement> { elementStack ->
+    val element = elementStack.element
+    when (element) {
+        is JsonObject -> jsonObject {
+            putAll(
+                element.mapValues<_, _, JsonElement> { (_, value) ->
+                    callRecursive(elementStack.push(value))
+                }
+            )
+        }
+
+        is JsonArray -> {
+            jsonArray {
+                addAll(element.map { callRecursive(elementStack.push(it)) })
+            }
+        }
+        is JsonLiteral -> element
+    }
+}
+
