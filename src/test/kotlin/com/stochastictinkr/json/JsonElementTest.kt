@@ -286,4 +286,25 @@ class JsonElementTest {
             array.deepCopy()
         }
     }
+
+    @Test
+    fun `deepCopy duplicate descendants become separate instances`() {
+        val array = jsonArray {
+            add(1)
+            add(2)
+        }
+        val input = jsonObject {
+            "key1"(array)
+            "key2"(array)
+        }
+
+        // Validate precondition
+        assertSame(input["key1"], input["key2"])
+
+        val copy = input.deepCopy()
+
+        // Validate postcondition
+        assertEquals(input, copy)
+        assertNotSame(copy["key1"], copy["key2"])
+    }
 }

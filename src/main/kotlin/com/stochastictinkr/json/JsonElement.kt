@@ -1,5 +1,7 @@
 package com.stochastictinkr.json
 
+import com.stochastictinkr.json.walker.*
+
 /**
  * Sealed interface representing a JSON element.
  */
@@ -580,23 +582,84 @@ class JsonObject private constructor(
         map.forEach { (key, value) -> key(value) }
     }
 
-    override fun deepCopy() = deepCopy(this)
+    override fun deepCopy(): JsonObject = deepCopy(this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is JsonObject) return false
-        if (content != other.content) return false
-        return true
+        return treeCompare(ElementStack(this) to ElementStack(other))
     }
 
     override fun hashCode(): Int {
-        return content.hashCode()
+        return treeHash(this)
     }
 
     override fun toString(): String {
-        return "JsonObject({${content.entries.joinToString(", ") { (key, value) -> "\"$key\": $value" }}})"
+        return "JsonObject({${content.entries.joinToString(", ") { (key, value) -> "\"$key\": ${value.typeName}" }}})"
     }
 }
+
+private val treeHash = ElementVisitor<Int> {
+    val element = it.element
+    when (element) {
+        is JsonLiteral -> element.hashCode()
+        is JsonObject -> element.entries.sumOf { (key, value) -> key.hashCode() + callRecursive(it.push(value)) }
+        is JsonArray -> {
+            var hash = 0
+            element.forEach { value ->
+                hash = hash * 37 + callRecursive(it.push(value))
+            }
+            hash
+        }
+    }
+}
+
+private val treeCompare = DeepRecursiveFunction<Pair<ElementStack, ElementStack>, Boolean> {
+    val (aStack, bStack) = it
+    val a = aStack.element
+    val b = bStack.element
+    when {
+        a === b -> true
+        a is JsonLiteral -> a == b
+        a is JsonObject -> {
+            when {
+                b !is JsonObject -> false
+                a.size != b.size -> false
+                else -> a.keys.all { key ->
+                    val aNext = aStack.push(a.getValue(key))
+                    val bNext = bStack.push(b.getValue(key))
+                    callRecursive(aNext to bNext)
+                }
+            }
+        }
+
+        a is JsonArray -> {
+            when {
+                b !is JsonArray -> false
+                a.size != b.size -> false
+                else -> a.zip(b).all { (aElement, bElement) ->
+                    val aNext = aStack.push(aElement)
+                    val bNext = bStack.push(bElement)
+                    callRecursive(aNext to bNext)
+                }
+            }
+        }
+
+        else -> false
+    }
+}
+
+private val JsonElement.typeName: String
+    get() {
+        return when (this) {
+            is JsonString -> "JsonString"
+            is JsonNumber -> "JsonNumber"
+            is JsonBoolean -> "JsonBoolean"
+            is JsonNull -> "JsonNull"
+            is JsonObject -> "JsonObject"
+            is JsonArray -> "JsonArray"
+        }
+    }
 
 @TinkrJsonDsl
 class JsonArray(
@@ -662,7 +725,7 @@ class JsonArray(
      */
     @TinkrJsonDsl
     operator fun set(index: Int, value: Nothing?) {
-        content[index] = JsonNull
+        content[index] = value.toJsonNull()
     }
 
     /**
@@ -991,8 +1054,9 @@ class JsonArray(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is JsonArray) return false
-        if (content != other.content) return false
-        return true
+        return content
+            .zip(other.content)
+            .all { (a, b) -> treeCompare(ElementStack(a) to ElementStack(b)) }
     }
 
     override fun hashCode(): Int {
@@ -1000,7 +1064,7 @@ class JsonArray(
     }
 
     override fun toString(): String {
-        return "JsonArray($content)"
+        return "JsonArray(${content.joinToString(", ") { it.typeName }})"
     }
 
     override fun deepCopy() = deepCopy(this)
@@ -1189,7 +1253,7 @@ fun Nothing?.toJsonNull() = JsonNull
  * If the same element is encountered multiple times, it will be copied multiple times, not shared. This results in a
  * tree of elements where each [JsonObject] and [JsonArray] is unique.
  */
-fun deepCopy(element: JsonElement) = deepCopy(ElementStack(element))
+fun <T : JsonElement> deepCopy(element: T): T = deepCopyFunction(element) as T
 
 /**
  * Makes a deep copy of this element. Throws an error on circular references.
@@ -1198,35 +1262,11 @@ fun deepCopy(element: JsonElement) = deepCopy(ElementStack(element))
  */
 fun deepCopy(root: JsonRoot) = JsonRoot(deepCopy(root.jsonElement))
 
-private class ElementStack(
-    val element: JsonElement,
-    val parent: ElementStack? = null,
-) {
-    fun push(element: JsonElement): ElementStack {
-        if (element !is JsonLiteral) {
-            require(generateSequence(this) { it.parent }.none { it.element === element }) { "Circular reference detected" }
-        }
-        return ElementStack(element, this)
-    }
-}
-
-private val deepCopy = DeepRecursiveFunction<ElementStack, JsonElement> { elementStack ->
+private val deepCopyFunction = ElementVisitor<JsonElement> { elementStack ->
     val element = elementStack.element
     when (element) {
-        is JsonObject -> jsonObject {
-            putAll(
-                element.mapValues<_, _, JsonElement> { (_, value) ->
-                    callRecursive(elementStack.push(value))
-                }
-            )
-        }
-
-        is JsonArray -> {
-            jsonArray {
-                addAll(element.map { callRecursive(elementStack.push(it)) })
-            }
-        }
         is JsonLiteral -> element
+        is JsonObject -> JsonObject(element.mapValues { (_, value) -> callRecursive(elementStack.push(value)) })
+        is JsonArray -> JsonArray(element.map { callRecursive(elementStack.push(it)) })
     }
 }
-
