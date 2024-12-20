@@ -48,3 +48,55 @@ internal typealias ElementVisitorScope<R> = DeepRecursiveScope<ElementStack, R>
  * Convenience function for invoking an [ElementVisitor] on the root [JsonElement].
  */
 internal operator fun <R> ElementVisitor<R>.invoke(element: JsonElement): R = this(ElementStack(element))
+
+
+
+internal val treeHash = ElementVisitor<Int> {
+    val element = it.element
+    when (element) {
+        is JsonLiteral -> element.hashCode()
+        is JsonObject -> element.entries.sumOf { (key, value) -> key.hashCode() + callRecursive(it.push(value)) }
+        is JsonArray -> {
+            var hash = 0
+            element.forEach { value ->
+                hash = hash * 37 + callRecursive(it.push(value))
+            }
+            hash
+        }
+    }
+}
+
+internal val treeCompare = DeepRecursiveFunction<Pair<ElementStack, ElementStack>, Boolean> {
+    val (aStack, bStack) = it
+    val a = aStack.element
+    val b = bStack.element
+    when {
+        a === b -> true
+        a is JsonLiteral -> a == b
+        a is JsonObject -> {
+            when {
+                b !is JsonObject -> false
+                a.size != b.size -> false
+                else -> a.keys.all { key ->
+                    val aNext = aStack.push(a.getValue(key))
+                    val bNext = bStack.push(b.getValue(key))
+                    callRecursive(aNext to bNext)
+                }
+            }
+        }
+
+        a is JsonArray -> {
+            when {
+                b !is JsonArray -> false
+                a.size != b.size -> false
+                else -> a.zip(b).all { (aElement, bElement) ->
+                    val aNext = aStack.push(aElement)
+                    val bNext = bStack.push(bElement)
+                    callRecursive(aNext to bNext)
+                }
+            }
+        }
+
+        else -> false
+    }
+}
