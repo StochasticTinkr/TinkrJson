@@ -73,56 +73,106 @@ class JsonArray(
      * Adds a string to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: String?) = add(value.toJsonStringOrNull())
+    fun add(value: String?) = value.toJsonStringOrNull().also(::add)
 
     /**
      * Adds an integer to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Int?) = add(value.toJsonNumberOrNull())
+    fun add(value: Int?) = value.toJsonNumberOrNull().also(::add)
 
     /**
      * Adds a long to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Long?) = add(value.toJsonNumberOrNull())
+    fun add(value: Long?) = value.toJsonNumberOrNull().also(::add)
 
     /**
      * Adds a float to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Float?) = add(value.toJsonNumberOrNull())
+    fun add(value: Float?) = value.toJsonNumberOrNull().also(::add)
 
     /**
      * Adds a double to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Double?) = add(value.toJsonNumberOrNull())
+    fun add(value: Double?) = value.toJsonNumberOrNull().also(::add)
 
     /**
      * Adds a boolean to the array, or null if the value is null.
      */
     @TinkrJsonDsl
-    fun add(value: Boolean?) = add(value.toJsonBooleanOrNull())
+    fun add(value: Boolean?) = value.toJsonBooleanOrNull().also(::add)
 
     /**
      * Adds a null value to the array.
      */
     @TinkrJsonDsl
-    fun add(value: Nothing?) = add(value.toJsonNull())
+    fun add(value: Nothing?) = JsonNull.also(::add)
 
     /**
      * Adds a new JsonObject to the array, and applies the given [build] block to it.
      */
     @TinkrJsonDsl
-    inline fun addObject(build: JsonObject.() -> Unit = {}) = add(JsonObject().apply(build))
+    inline fun addObject(build: JsonObject.() -> Unit = {}) =
+        jsonObject { build() }.also(::add)
 
     /**
      * Adds a new JsonArray to the array, and applies the given [build] block to it.
      */
     @TinkrJsonDsl
-    inline fun addArray(build: JsonArray.() -> Unit = {}) = add(JsonArray().apply(build))
+    inline fun addArray(build: JsonArray.() -> Unit = {}) =
+        jsonArray { build() }.also(::add)
 
+    /**
+     * Returns true if the array contains the given [String] value.
+     */
+    operator fun contains(element: String?): Boolean {
+        return element.toJsonStringOrNull() in this
+    }
+
+    /**
+     * Returns true if the array contains the given [Int] value.
+     */
+    operator fun contains(element: Int?): Boolean {
+        return element.toJsonNumberOrNull() in this
+    }
+
+    /**
+     * Returns true if the array contains the given [Long] value.
+     */
+    operator fun contains(element: Long?): Boolean {
+        return element.toJsonNumberOrNull() in this
+    }
+
+    /**
+     * Returns true if the array contains the given [Float] value.
+     */
+    operator fun contains(element: Float?): Boolean {
+        return element.toJsonNumberOrNull() in this
+    }
+
+    /**
+     * Returns true if the array contains the given [Double] value.
+     */
+    operator fun contains(element: Double?): Boolean {
+        return element.toJsonNumberOrNull() in this
+    }
+
+    /**
+     * Returns true if the array contains the given [Boolean] value.
+     */
+    operator fun contains(element: Boolean?): Boolean {
+        return element.toJsonBooleanOrNull() in this
+    }
+
+    /**
+     * Returns true if the array contains null.
+     */
+    operator fun contains(element: Nothing?): Boolean {
+        return JsonNull in this
+    }
 
     /**
      * Removes the first occurrence of the given string from the array.
@@ -429,42 +479,42 @@ class JsonArray(
  * The non-null elements will be converted to [JsonString]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("stringsToJsonArray")
-fun Iterable<String?>.toJsonArray() = JsonArray(map { it.toJsonStringOrNull() })
+fun Iterable<String?>.toJsonArray() = mapTo(JsonArray()) { it.toJsonStringOrNull() }
 
 /**
  * Convert this [Iterable] to a [JsonArray].
  * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("intsToJsonArray")
-fun Iterable<Int?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
+fun Iterable<Int?>.toJsonArray() = mapTo(JsonArray()) { it.toJsonNumberOrNull() }
 
 /**
  * Convert this [Iterable] to a [JsonArray].
  * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("longsToJsonArray")
-fun Iterable<Long?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
+fun Iterable<Long?>.toJsonArray() = mapTo(JsonArray()) { it.toJsonNumberOrNull() }
 
 /**
  * Convert this [Iterable] to a [JsonArray].
  * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("floatsToJsonArray")
-fun Iterable<Float?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
+fun Iterable<Float?>.toJsonArray() = mapTo(JsonArray()) { it.toJsonNumberOrNull() }
 
 /**
  * Convert this [Iterable] to a [JsonArray].
  * The non-null elements will be converted to [JsonNumber]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("doublesToJsonArray")
-fun Iterable<Double?>.toJsonArray() = JsonArray(map { it.toJsonNumberOrNull() })
+fun Iterable<Double?>.toJsonArray() = mapTo(JsonArray()) { it.toJsonNumberOrNull() }
 
 /**
  * Convert this [Iterable] to a [JsonArray].
  * The non-null elements will be converted to [JsonBoolean]s. Null elements will be converted to [JsonNull].
  */
 @JvmName("booleansToJsonArray")
-fun Iterable<Boolean?>.toJsonArray() = JsonArray(map { it.toJsonBooleanOrNull() })
+fun Iterable<Boolean?>.toJsonArray() = mapTo(JsonArray()) { it.toJsonBooleanOrNull() }
 
 /**
  * Convert this [Iterable] to a [JsonArray].
@@ -472,3 +522,75 @@ fun Iterable<Boolean?>.toJsonArray() = JsonArray(map { it.toJsonBooleanOrNull() 
  */
 @JvmName("iterableToJsonArray")
 fun Iterable<JsonElement>.toJsonArray() = JsonArray(this)
+
+/**
+ * Filters the elements of this [Iterable] to only include the [String] elements that match the given [predicate].
+ */
+inline fun Iterable<JsonElement>.filterStrings(predicate: (String) -> Boolean = { true }) =
+    mapNotNull { it.stringOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the [Int] elements that match the given [predicate].
+ * Note, if the element was not stored as an [Int], it will be excluded from the result. Use [filterNumbers] to include
+ * all numbers.
+ */
+inline fun Iterable<JsonElement>.filterInts(predicate: (Int) -> Boolean = { true }) =
+    mapNotNull { it.intOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the [Long] elements that match the given [predicate].
+ * Note, if the element was not stored as a [Long], it will be excluded from the result. Use [filterNumbers] to include
+ * all numbers.
+ */
+inline fun Iterable<JsonElement>.filterLongs(predicate: (Long) -> Boolean = { true }) =
+    mapNotNull { it.longOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the [Float] elements that match the given [predicate].
+ * Note, if the element was not stored as a [Float], it will be excluded from the result. Use [filterNumbers] to include
+ * all numbers.
+ */
+inline fun Iterable<JsonElement>.filterFloats(predicate: (Float) -> Boolean = { true }) =
+    mapNotNull { it.floatOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the [Double] elements that match the given [predicate].
+ * Note, if the element was not stored as a [Double], it will be excluded from the result. Use [filterNumbers] to include
+ */
+inline fun Iterable<JsonElement>.filterDoubles(predicate: (Double) -> Boolean = { true }) =
+    mapNotNull { it.doubleOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the Number elements that match the given [predicate].
+ * If you want to treat the numbers as their specific types, use the [filterNumbers] overload that takes a [JsonNumberTypeSelector].
+ */
+inline fun Iterable<JsonElement>.filterNumbers(predicate: (Number) -> Boolean = { true }) =
+    mapNotNull { it.numberOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the numeric elements that match the given [predicate].
+ * The [selector] is used to determine the type of number to return, and the [predicate] is used to filter the numbers.
+ * The [selector] can be one of [AsInt], [AsLong], [AsFloat], [AsDouble], or [AsNumber].
+ */
+inline fun <N : Number> Iterable<JsonElement>.filterNumbers(
+    selector: JsonNumberTypeSelector<N>,
+    predicate: (N) -> Boolean = { true },
+) = mapNotNull { it.jsonNumberOrNull?.let { selector.select(it) }?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the [Boolean] elements that match the given [predicate].
+ */
+inline fun Iterable<JsonElement>.filterBooleans(predicate: (Boolean) -> Boolean = { true }) =
+    mapNotNull { it.booleanOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the [JsonObject] elements that match the given [predicate].
+ */
+inline fun Iterable<JsonElement>.filterJsonObjects(predicate: (JsonObject) -> Boolean = { true }) =
+    mapNotNull { it.jsonObjectOrNull?.takeIf(predicate) }
+
+/**
+ * Filters the elements of this [Iterable] to only include the [JsonArray] elements that match the given [predicate].
+ */
+inline fun Iterable<JsonElement>.filterJsonArrays(predicate: (JsonArray) -> Boolean = { true }) =
+    mapNotNull { it.jsonArrayOrNull?.takeIf(predicate) }

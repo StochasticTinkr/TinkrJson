@@ -119,6 +119,15 @@ class JsonObject private constructor(
     }
 
     /**
+     * Sets the value of the given key to the number, or null if the value is null.
+     * Value must be one of the following types: [Short], [Int], [Long], [Float], [Double], or null.
+     */
+    @TinkrJsonDsl
+    operator fun String.invoke(value: Number?) {
+        set(this, value)
+    }
+
+    /**
      * Sets the value of the given key to a boolean, or null if the value is null.
      *
      * Example syntax:
@@ -172,6 +181,158 @@ class JsonObject private constructor(
     }
 
     /**
+     * Sets the value of the given key to a string, or removes the key if the value is null.
+     *
+     * Example syntax:
+     * ```
+     * jsonObject {
+     *   "key".nonNull("value")
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: String?) {
+        setNonNull(this, value)
+    }
+
+    /**
+     * Sets the value of the given key to an integer, or removes the key if the value is null.
+     *
+     * Example syntax:
+     * ```
+     * jsonObject {
+     *   "key".nonNull(123)
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: Int?) {
+        setNonNull(this, value)
+    }
+
+    /**
+     * Sets the value of the given key to a long, or removes the key if the value is null.
+     *
+     * Example syntax:
+     * ```
+     * jsonObject {
+     *   "key".nonNull(123L)
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: Long?) {
+        setNonNull(this, value)
+    }
+
+    /**
+     * Sets the value of the given key to a float, or removes the key if the value is null.
+     *
+     * Example syntax:
+     * ```
+     * jsonObject {
+     *   "key".nonNull(123.45f)
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: Float?) {
+        setNonNull(this, value)
+    }
+
+    /**
+     * Sets the value of the given key to a double, or removes the key if the value is null.
+     *
+     * Example syntax:
+     * ```
+     * jsonObject {
+     *   "key".nonNull(123.45)
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: Double?) {
+        setNonNull(this, value)
+    }
+
+    /**
+     * Sets the value of the given key to the number, or removes the key if the value is null.
+     * Value must be one of the following types: [Short], [Int], [Long], [Float], [Double], or null.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: Number?) {
+        setNonNull(this, value)
+    }
+
+    /**
+     * Sets the value of the given key to a boolean, or removes the key if the value is null.
+     *
+     * Example syntax:
+     * ```
+     * jsonObject {
+     *   "key".nonNull(true)
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: Boolean?) {
+        setNonNull(this, value)
+    }
+
+    /**
+     * Sets the value of the given key to the element in the [JsonRoot], or removes the key if the value is null.
+     *
+     * If the value contains JsonNull, it will be added to the object.
+     *
+     * Example syntax:
+     * ```
+     * val theJsonRoot: JsonRoot = ...
+     * jsonObject {
+     *   "key".nonNull(theJsonRoot)
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: JsonRoot?) {
+        setNonNull(this, value?.jsonElement)
+    }
+
+    /**
+     * Sets the value of the given key to the given JSON element, or removes the key if the value is null.
+     *
+     * If the value contains JsonNull, it will be added to the object.
+     *
+     * Example syntax:
+     * ```
+     * val theJsonElement: JsonElement? = ...
+     * jsonObject {
+     *   "key".nonNull(theJsonElement)
+     * }
+     * ```
+     * @receiver The key.
+     * @param value The value.
+     */
+    @TinkrJsonDsl
+    fun String.nonNull(value: JsonElement?) {
+        setNonNull(this, value)
+    }
+
+
+    /**
      * Sets the value of the given key to a new JsonArray, and applies the given [build] block to it.
      *
      * Example syntax:
@@ -188,8 +349,9 @@ class JsonObject private constructor(
      * @param build The block to apply to the new JsonArray.
      */
     @TinkrJsonDsl
-    inline operator fun String.get(build: JsonArray.() -> Unit) {
-        set(this, JsonArray().apply(build))
+    inline operator fun String.get(build: JsonArray.() -> Unit) = JsonArray().also {
+        it.build()
+        set(this, it)
     }
 
     /**
@@ -208,8 +370,9 @@ class JsonObject private constructor(
      * @param builder The block to apply to the new JsonObject.
      */
     @TinkrJsonDsl
-    inline operator fun String.invoke(builder: JsonObject.() -> Unit) {
-        set(this, JsonObject().apply(builder))
+    inline operator fun String.invoke(builder: JsonObject.() -> Unit) = JsonObject().also {
+        it.builder()
+        set(this, it)
     }
 
     /**
@@ -282,6 +445,25 @@ class JsonObject private constructor(
     }
 
     /**
+     * Sets the value of the given key to a double, or null if the value is null.
+     * Value must be one of the following types: [Short], [Int], [Long], [Float], [Double], or null.
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    operator fun set(key: String, value: Number?) {
+        when (value) {
+            is Short -> set(key, value.toInt())
+            is Int -> set(key, value)
+            is Long -> set(key, value)
+            is Float -> set(key, value)
+            is Double -> set(key, value)
+            null -> set(key, JsonNull)
+            else -> throw IllegalArgumentException("Value must be one of the following types: Short, Int, Long, Float, Double, or null.")
+        }
+    }
+
+    /**
      * Sets the value of the given key to a boolean, or null if the value is null.
      * @param key The key
      * @param value The value
@@ -289,6 +471,135 @@ class JsonObject private constructor(
     @TinkrJsonDsl
     operator fun set(key: String, value: Boolean?) {
         content[key] = value?.let { JsonBoolean(it) } ?: JsonNull
+    }
+
+    /**
+     * Sets the value of the given key to a string, or removes the key if the value is null.
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: String?) {
+        if (value != null) {
+            content[key] = JsonString(value)
+        } else {
+            content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to an integer, or removes the key if the value is null.
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: Int?) {
+        if (value != null) {
+            content[key] = JsonNumber(value)
+        } else {
+            content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to a long, or removes the key if the value is null.
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: Long?) {
+        if (value != null) {
+            content[key] = JsonNumber(value)
+        } else {
+            content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to a float, or removes the key if the value is null.
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: Float?) {
+        if (value != null) {
+            content[key] = JsonNumber(value)
+        } else {
+            content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to a double, or removes the key if the value is null.
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: Double?) {
+        if (value != null) {
+            content[key] = JsonNumber(value)
+        } else {
+            content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to the number, or removes the key if the value is null.
+     * Value must be one of the following types: [Short], [Int], [Long], [Float], [Double], or null.
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: Number?) {
+        if (value != null) {
+            set(key, value)
+        } else {
+            content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to a boolean, or removes the key if the value is null.
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: Boolean?) {
+        when (value) {
+            true -> content[key] = JsonBoolean.True
+            false -> content[key] = JsonBoolean.False
+            null -> content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to a [JsonElement], or removes the key if the value is `null`.
+     * [JsonNull] values *will* be added to the object.
+     *
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: JsonElement?) {
+        if (value != null) {
+            content[key] = value
+        } else {
+            content.remove(key)
+        }
+    }
+
+    /**
+     * Sets the value of the given key to the [JsonRoot]'s value, or removes the key if the value is `null`.
+     * [JsonNull] values *will* be added to the object.
+     *
+     * @param key The key
+     * @param value The value
+     */
+    @TinkrJsonDsl
+    fun setNonNull(key: String, value: JsonRoot?) {
+        if (value != null) {
+            content[key] = value.jsonElement
+        } else {
+            content.remove(key)
+        }
     }
 
 
