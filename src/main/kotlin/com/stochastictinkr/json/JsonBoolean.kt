@@ -5,6 +5,8 @@ package com.stochastictinkr.json
  */
 sealed class JsonBoolean : JsonLiteral {
     override val booleanOrNull get() = boolean
+    override val jsonBoolean: JsonBoolean get() = this
+    override val jsonBooleanOrNull: JsonBoolean? get() = this
 
     override fun toString() = "JsonBoolean($boolean)"
     override fun equals(other: Any?) = this === other

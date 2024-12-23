@@ -4,9 +4,11 @@ package com.stochastictinkr.json.schema
 
 import com.stochastictinkr.json.*
 
-sealed class JsonSchema {
+sealed class JsonSchema<S : JsonSchema<S>> {
     abstract val metadata: SchemaMetadata
-    abstract fun withMetadata(metadata: SchemaMetadata): JsonSchema
+    abstract fun withMetadata(metadata: SchemaMetadata): S
+
+    inline fun mapMetadata(transform: SchemaMetadata.() -> SchemaMetadata): S = withMetadata(metadata.transform())
     protected abstract fun JsonObject.build()
     internal abstract val type: JsonSchemaType
     fun toJson(): JsonObject = jsonObject {
@@ -75,26 +77,26 @@ private fun JsonObject.setSchemaType(type: JsonSchemaType) {
 
 class IntegerSchema(
     metadata: SchemaMetadata = SchemaMetadata(),
-    properties: NumericProperties<Int>,
-) : NumericSchema<Int>(metadata, properties, JsonSchemaType.INTEGER) {
+    properties: NumericProperties<Int> = NumericProperties(),
+) : NumericSchema<Int, IntegerSchema>(metadata, properties, JsonSchemaType.INTEGER) {
     override fun copy(metadata: SchemaMetadata, properties: NumericProperties<Int>) =
         IntegerSchema(metadata, properties)
 }
 
 data class ObjectSchema(
     override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val properties: Map<String, JsonSchema> = emptyMap(),
+    private val properties: Map<String, JsonSchema<*>> = emptyMap(),
     private val required: List<String> = emptyList(),
     private val additionalProperties: Boolean? = null,
-    private val patternProperties: Map<String, JsonSchema> = emptyMap(),
-    private val propertyNames: JsonSchema? = null,
+    private val patternProperties: Map<String, JsonSchema<*>> = emptyMap(),
+    private val propertyNames: JsonSchema<*>? = null,
     private val dependencies: Map<String, Dependency> = emptyMap(),
     private val minProperties: Int? = null,
     private val maxProperties: Int? = null,
-) : JsonSchema() {
+) : JsonSchema<ObjectSchema>() {
     override val type: JsonSchemaType = JsonSchemaType.OBJECT
 
-    override fun withMetadata(metadata: SchemaMetadata): JsonSchema = copy(metadata = metadata)
+    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
 
     override fun JsonObject.build() {
         "properties".nonNull(propertiesObject(properties))
@@ -105,7 +107,7 @@ data class ObjectSchema(
         "dependencies".nonNull(dependenciesObject(dependencies))
     }
 
-    private fun propertiesObject(properties: Map<String, JsonSchema>): JsonObject? = properties
+    private fun propertiesObject(properties: Map<String, JsonSchema<*>>): JsonObject? = properties
         .takeUnless { it.isEmpty() }
         ?.mapValuesTo(JsonObject()) { (_, schema) -> schema.toJson() }
 
@@ -118,6 +120,7 @@ sealed class Dependency {
     data class Property(val requiredProperties: List<String>) : Dependency() {
         override fun toJson(): JsonElement = requiredProperties.toJsonArray()
     }
+
     data class Schema(val schema: ObjectSchema) : Dependency() {
         override fun toJson(): JsonElement = schema.toJson()
     }
@@ -128,12 +131,12 @@ sealed class Dependency {
 
 data class ArraySchema(
     override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val items: JsonSchema? = null,
-    private val additionalItems: JsonSchema? = null,
+    private val items: JsonSchema<*>? = null,
+    private val additionalItems: JsonSchema<*>? = null,
     private val minItems: Int? = null,
     private val maxItems: Int? = null,
     private val uniqueItems: Boolean = false,
-) : JsonSchema() {
+) : JsonSchema<ArraySchema>() {
     override val type: JsonSchemaType = JsonSchemaType.ARRAY
 
     override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
@@ -153,10 +156,10 @@ data class StringSchema(
     private val maxLength: Int? = null,
     private val pattern: String? = null,
     private val format: String? = null,
-) : JsonSchema() {
+) : JsonSchema<StringSchema>() {
     override val type: JsonSchemaType = JsonSchemaType.STRING
 
-    override fun withMetadata(metadata: SchemaMetadata): JsonSchema = copy(metadata = metadata)
+    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
 
     override fun JsonObject.build() {
         "minLength".nonNull(minLength)
@@ -166,17 +169,18 @@ data class StringSchema(
     }
 }
 
-sealed class NumericSchema<N : Number>(
+sealed class NumericSchema<N : Number, S : NumericSchema<N, S>>(
     override val metadata: SchemaMetadata = SchemaMetadata(),
     val properties: NumericProperties<N>,
     override val type: JsonSchemaType = JsonSchemaType.NUMBER,
-) : JsonSchema() {
-    override fun withMetadata(metadata: SchemaMetadata): NumericSchema<N> = copy(metadata = metadata)
-    fun withProperties(properties: NumericProperties<N>): NumericSchema<N> = copy(properties = properties)
+) : JsonSchema<S>() {
+    override fun withMetadata(metadata: SchemaMetadata): S = copy(metadata = metadata)
+    fun withProperties(properties: NumericProperties<N>): S = copy(properties = properties)
     abstract fun copy(
         metadata: SchemaMetadata = this.metadata,
         properties: NumericProperties<N> = this.properties,
-    ): NumericSchema<N>
+    ): S
+    inline fun mapProperties(transform: NumericProperties<N>.() -> NumericProperties<N>): S = withProperties(properties.transform())
 
     override fun JsonObject.build() {
         properties.run { build() }
@@ -186,7 +190,7 @@ sealed class NumericSchema<N : Number>(
 class NumberSchema<N : Number> private constructor(
     metadata: SchemaMetadata = SchemaMetadata(),
     properties: NumericProperties<N>,
-) : NumericSchema<N>(metadata, properties) {
+) : NumericSchema<N, NumberSchema<N>>(metadata, properties) {
 
     override fun copy(metadata: SchemaMetadata, properties: NumericProperties<N>) =
         NumberSchema(metadata, properties)
@@ -215,12 +219,17 @@ class NumberSchema<N : Number> private constructor(
             metadata: SchemaMetadata = SchemaMetadata(),
             properties: DoubleProperties = DoubleProperties(),
         ) = NumberSchema(metadata, properties)
+
+        val int = this(properties = IntProperties())
+        val long = this(properties = LongProperties())
+        val float = this(properties = FloatProperties())
+        val double = this(properties = DoubleProperties())
     }
 }
 
 data class BooleanSchema(
     override val metadata: SchemaMetadata = SchemaMetadata(),
-) : JsonSchema() {
+) : JsonSchema<BooleanSchema>() {
     override val type: JsonSchemaType = JsonSchemaType.BOOLEAN
     override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
 
@@ -229,7 +238,7 @@ data class BooleanSchema(
 
 data class NullSchema(
     override val metadata: SchemaMetadata = SchemaMetadata(),
-) : JsonSchema() {
+) : JsonSchema<NullSchema>() {
     override val type: JsonSchemaType = JsonSchemaType.NULL
     override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
 
@@ -239,7 +248,7 @@ data class NullSchema(
 data class ReferenceSchema(
     override val metadata: SchemaMetadata = SchemaMetadata(),
     private val reference: String,
-) : JsonSchema() {
+) : JsonSchema<ReferenceSchema>() {
     override val type: JsonSchemaType = JsonSchemaType.OBJECT
     override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
 
@@ -254,11 +263,11 @@ data class ReferenceSchema(
 
 data class CompositeSchema(
     override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val allOf: List<JsonSchema> = emptyList(),
-    private val anyOf: List<JsonSchema> = emptyList(),
-    private val oneOf: List<JsonSchema> = emptyList(),
-    private val not: JsonSchema? = null,
-) : JsonSchema() {
+    private val allOf: List<JsonSchema<*>> = emptyList(),
+    private val anyOf: List<JsonSchema<*>> = emptyList(),
+    private val oneOf: List<JsonSchema<*>> = emptyList(),
+    private val not: JsonSchema<*>? = null,
+) : JsonSchema<CompositeSchema>() {
     override val type: JsonSchemaType = JsonSchemaType.OBJECT
     override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
 
@@ -276,7 +285,7 @@ data class CompositeSchema(
         not?.let { notProperty(it.toJson()) }
     }
 
-    private fun JsonObject.setCompositeType(list: List<JsonSchema>, property: String) {
+    private fun JsonObject.setCompositeType(list: List<JsonSchema<*>>, property: String) {
         if (list.isNotEmpty()) list.mapTo(property[{ }]) { it.toJson() }
     }
 }
