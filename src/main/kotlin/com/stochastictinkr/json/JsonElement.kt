@@ -1,6 +1,6 @@
 package com.stochastictinkr.json
 
-import com.stochastictinkr.json.walker.*
+import com.stochastictinkr.json.walker.ElementVisitor
 
 /**
  * Sealed interface representing a JSON element.
@@ -17,6 +17,11 @@ sealed interface JsonElement {
     val jsonObjectOrNull: JsonObject? get() = null
 
     /**
+     * This element as a [JsonObject], or null if this element is [JsonNull].
+     */
+    val jsonObjectUnlessNull: JsonObject? get() = jsonObject
+
+    /**
      * This element as a [JsonArray], or throws an error if this element is not a JSON array.
      */
     val jsonArray: JsonArray get() = error("Expected JsonArray, but was $this")
@@ -25,6 +30,11 @@ sealed interface JsonElement {
      * this element as a [JsonArray], or null if this element is not a JSON array.
      */
     val jsonArrayOrNull: JsonArray? get() = null
+
+    /**
+     * This element as a [JsonArray], or null if this element is [JsonNull].
+     */
+    val jsonArrayUnlessNull: JsonArray? get() = jsonArray
 
     /**
      * This element as a [JsonString], or throws an error if this element is not a JSON string.
@@ -47,6 +57,11 @@ sealed interface JsonElement {
     val stringOrNull: String? get() = null
 
     /**
+     *  The String value of this element, or null if this element is [JsonNull].
+     */
+    val stringUnlessNull: String? get() = if (isNull) null else string
+
+    /**
      * This element as a [JsonBoolean], or throws an error if this element is not a JSON boolean.
      */
     val jsonBoolean: JsonBoolean get() = error("Expected JsonBoolean, but was $this")
@@ -65,6 +80,11 @@ sealed interface JsonElement {
      * The Boolean value of this element, or null if this element is not a [JsonBoolean] literal.
      */
     val booleanOrNull: Boolean? get() = null
+
+    /**
+     * The Boolean value of this element, or null if this element is [JsonNull].
+     */
+    val booleanUnlessNull: Boolean? get() = boolean
 
     /**
      * This element as a [JsonNumber], or throws an error if this element is not a JSON number.
@@ -87,6 +107,11 @@ sealed interface JsonElement {
     val numberOrNull: Number? get() = null
 
     /**
+     * The Number value of this element, or null if this element is [JsonNull].
+     */
+    val numberUnlessNull: Number? get() = number
+
+    /**
      * The Numeric value of this element converted to an Int, or throws an error if this element is not a [JsonNumber] literal.
      */
     val int: Int get() = number.toInt()
@@ -96,6 +121,10 @@ sealed interface JsonElement {
      */
     val intOrNull: Int? get() = null
 
+    /**
+     * The Numeric value of this element converted to an Int, or null if this element is [JsonNull].
+     */
+    val intUnlessNull: Int? get() = int
 
     /**
      * The Numeric value of this element converted to a Long, or throws an error if this element is not a [JsonNumber] literal.
@@ -108,6 +137,11 @@ sealed interface JsonElement {
     val longOrNull: Long? get() = null
 
     /**
+     * The Numeric value of this element converted to a Long, or null if this element is [JsonNull].
+     */
+    val longUnlessNull: Long? get() = long
+
+    /**
      * The Numeric value of this element converted to a Float, or throws an error if this element is not a [JsonNumber] literal.
      */
     val float: Float get() = number.toFloat()
@@ -118,6 +152,11 @@ sealed interface JsonElement {
     val floatOrNull: Float? get() = null
 
     /**
+     * The Numeric value of this element converted to a Float, or null if this element is [JsonNull].
+     */
+    val floatUnlessNull: Float? get() = float
+
+    /**
      * The Numeric value of this element converted to a Double, or throws an error if this element is not a [JsonNumber] literal.
      */
     val double: Double get() = number.toDouble()
@@ -126,6 +165,11 @@ sealed interface JsonElement {
      * The Double value of this element, or null if this element is not a double [JsonNumber] literal.
      */
     val doubleOrNull: Double? get() = null
+
+    /**
+     * The Numeric value of this element converted to a Double, or null if this element is [JsonNull].
+     */
+    val doubleUnlessNull: Double? get() = double
 
 
     /**
@@ -142,6 +186,8 @@ sealed interface JsonElement {
      * Returns true if this element is null, false otherwise.
      */
     val isNull get() = false
+
+    fun <R> unlessNull(block: JsonElement.() -> R): R? = block()
 
     /**
      * Makes a deep copy of this element. Throws an error on circular references.

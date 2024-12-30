@@ -3,289 +3,142 @@
 package com.stochastictinkr.json.schema
 
 import com.stochastictinkr.json.*
+import com.stochastictinkr.json.properties.*
+import kotlin.properties.*
 
-sealed class JsonSchema<S : JsonSchema<S>> {
-    abstract val metadata: SchemaMetadata
-    abstract fun withMetadata(metadata: SchemaMetadata): S
+class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(jsonObject) {
+    // Common properties
+    var type by string("type").optional()
+    var title by string("title").optional()
+    var description by string("description").optional()
+    var default by jsonObject("default").optional()
+    var examples by jsonArray("examples").optional()
 
-    inline fun mapMetadata(transform: SchemaMetadata.() -> SchemaMetadata): S = withMetadata(metadata.transform())
-    protected abstract fun JsonObject.build()
-    internal abstract val type: JsonSchemaType
-    fun toJson(): JsonObject = jsonObject {
-        setSchemaType(type)
-        metadata.run { build() }
-        build()
-    }
-}
+    // Object properties
+    val properties by jsonObject(::ObjectProperties, "properties").optionalRef()
+    val required by jsonArray(string, "required").optionalRef()
+    var additionalProperties by jsonElement("additionalProperties")
+    var minProperties by int("minProperties").optional()
+    var maxProperties by int("maxProperties").optional()
 
-data class SchemaMetadata(
-    val title: String? = null,
-    val description: String? = null,
-    val default: JsonElement? = null,
-    val examples: JsonArray? = null,
-) {
-    internal fun JsonObject.build() {
-        "title".nonNull(title)
-        "description".nonNull(description)
-        "default".nonNull(default)
-        "examples".nonNull(examples)
-    }
-}
+    // Array properties
+    val items by jsonObject(::JsonSchema, "items").optionalRef()
+    var minItems by int("minItems").optional()
+    var maxItems by int("maxItems").optional()
+    var uniqueItems by boolean("uniqueItems").optional()
 
-data class NumericProperties<N : Number>(
-    val multipleOf: N? = null,
-    val minimum: N? = null,
-    val maximum: N? = null,
-    val exclusiveMinimum: Boolean = false,
-    val exclusiveMaximum: Boolean = false,
-) {
-    private companion object {
-        const val multipleOfProperty = "multipleOf"
-        const val minimumProperty = "minimum"
-        const val maximumProperty = "maximum"
-        const val exclusiveMinimumProperty = "exclusiveMinimum"
-        const val exclusiveMaximumProperty = "exclusiveMaximum"
-    }
+    // String properties
+    var minLength by int("minLength").optional()
+    var maxLength by int("maxLength").optional()
+    var pattern by string("pattern").optional()
 
-    internal fun JsonObject.build() {
-        multipleOf?.let { multipleOfProperty(it) }
-        minimum?.let { minimumProperty(it) }
-        maximum?.let { maximumProperty(it) }
-        if (exclusiveMinimum) exclusiveMinimumProperty(true)
-        if (exclusiveMaximum) exclusiveMaximumProperty(true)
-    }
-}
+    // Number properties
+    val intProperties get():NumberProperties<Int> = NumberProperties.IntProperties(jsonObject)
+    val longProperties get():NumberProperties<Long> = NumberProperties.LongProperties(jsonObject)
+    val floatProperties get():NumberProperties<Float> = NumberProperties.FloatProperties(jsonObject)
+    val doubleProperties get():NumberProperties<Double> = NumberProperties.DoubleProperties(jsonObject)
 
-typealias FloatProperties = NumericProperties<Float>
-typealias DoubleProperties = NumericProperties<Double>
-typealias LongProperties = NumericProperties<Long>
-typealias IntProperties = NumericProperties<Int>
+    fun numberProperties(
+        multipleOf: Int? = null,
+        minimum: Int? = null,
+        maximum: Int? = null,
+        exclusiveMinimum: Int? = null,
+        exclusiveMaximum: Int? = null,
+    ) = intProperties.set(multipleOf, minimum, maximum, exclusiveMinimum, exclusiveMaximum)
 
-internal enum class JsonSchemaType(val jsonType: String) {
-    OBJECT("object"),
-    ARRAY("array"),
-    STRING("string"),
-    NUMBER("number"),
-    INTEGER("integer"),
-    BOOLEAN("boolean"),
-    NULL("null")
-}
+    fun numberProperties(
+        multipleOf: Long? = null,
+        minimum: Long? = null,
+        maximum: Long? = null,
+        exclusiveMinimum: Long? = null,
+        exclusiveMaximum: Long? = null,
+    ) = longProperties.set(multipleOf, minimum, maximum, exclusiveMinimum, exclusiveMaximum)
 
-private fun JsonObject.setSchemaType(type: JsonSchemaType) {
-    "type"(type.jsonType)
-}
+    fun numberProperties(
+        multipleOf: Float? = null,
+        minimum: Float? = null,
+        maximum: Float? = null,
+        exclusiveMinimum: Float? = null,
+        exclusiveMaximum: Float? = null,
+    ) = floatProperties.set(multipleOf, minimum, maximum, exclusiveMinimum, exclusiveMaximum)
 
-class IntegerSchema(
-    metadata: SchemaMetadata = SchemaMetadata(),
-    properties: NumericProperties<Int> = NumericProperties(),
-) : NumericSchema<Int, IntegerSchema>(metadata, properties, JsonSchemaType.INTEGER) {
-    override fun copy(metadata: SchemaMetadata, properties: NumericProperties<Int>) =
-        IntegerSchema(metadata, properties)
-}
+    fun numberProperties(
+        multipleOf: Double? = null,
+        minimum: Double? = null,
+        maximum: Double? = null,
+        exclusiveMinimum: Double? = null,
+        exclusiveMaximum: Double? = null,
+    ) = doubleProperties.set(multipleOf, minimum, maximum, exclusiveMinimum, exclusiveMaximum)
 
-data class ObjectSchema(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val properties: Map<String, JsonSchema<*>> = emptyMap(),
-    private val required: List<String> = emptyList(),
-    private val additionalProperties: Boolean? = null,
-    private val patternProperties: Map<String, JsonSchema<*>> = emptyMap(),
-    private val propertyNames: JsonSchema<*>? = null,
-    private val dependencies: Map<String, Dependency> = emptyMap(),
-    private val minProperties: Int? = null,
-    private val maxProperties: Int? = null,
-) : JsonSchema<ObjectSchema>() {
-    override val type: JsonSchemaType = JsonSchemaType.OBJECT
+    // Composition properties
+    val allOf by jsonArray(::JsonSchema, "allOf").optionalRef()
+    val anyOf by jsonArray(::JsonSchema, "anyOf").optionalRef()
+    val oneOf by jsonArray(::JsonSchema, "oneOf").optionalRef()
+    val not by jsonObject(::JsonSchema, "not").optionalRef()
 
-    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
+    sealed class NumberProperties<N : Number>(jsonObject: JsonObject) : JsonObjectWrapper(jsonObject) {
+        var multipleOf by number("multipleOf")
+        var minimum by number("minimum")
+        var maximum by number("maximum")
+        var exclusiveMinimum by number("exclusiveMinimum")
+        var exclusiveMaximum by number("exclusiveMaximum")
 
-    override fun JsonObject.build() {
-        "properties".nonNull(propertiesObject(properties))
-        "required".nonNull(required.toJsonArray())
-        "additionalProperties".nonNull(additionalProperties)
-        "patternProperties".nonNull(propertiesObject(patternProperties))
-        "propertyNames".nonNull(propertyNames?.toJson())
-        "dependencies".nonNull(dependenciesObject(dependencies))
-    }
+        fun set(
+            multipleOf: N? = null,
+            minimum: N? = null,
+            maximum: N? = null,
+            exclusiveMinimum: N? = null,
+            exclusiveMaximum: N? = null,
+        ) {
+            this.multipleOf = multipleOf
+            this.minimum = minimum
+            this.maximum = maximum
+            this.exclusiveMinimum = exclusiveMinimum
+            this.exclusiveMaximum = exclusiveMaximum
+        }
 
-    private fun propertiesObject(properties: Map<String, JsonSchema<*>>): JsonObject? = properties
-        .takeUnless { it.isEmpty() }
-        ?.mapValuesTo(JsonObject()) { (_, schema) -> schema.toJson() }
+        fun clear() {
+            multipleOf = null
+            minimum = null
+            maximum = null
+            exclusiveMinimum = null
+            exclusiveMaximum = null
+        }
 
-    private fun dependenciesObject(dependencies: Map<String, Dependency>): JsonObject? = dependencies
-        .takeUnless { it.isEmpty() }
-        ?.mapValuesTo(JsonObject()) { (_, value) -> value.toJson() }
-}
+        protected abstract fun number(name: String): OptionalProperty<N, N?>
 
-sealed class Dependency {
-    data class Property(val requiredProperties: List<String>) : Dependency() {
-        override fun toJson(): JsonElement = requiredProperties.toJsonArray()
-    }
+        internal class IntProperties(jsonObject: JsonObject) : NumberProperties<Int>(jsonObject) {
+            override fun number(name: String) = int(name).optional()
+        }
 
-    data class Schema(val schema: ObjectSchema) : Dependency() {
-        override fun toJson(): JsonElement = schema.toJson()
-    }
+        internal class LongProperties(jsonObject: JsonObject) : NumberProperties<Long>(jsonObject) {
+            override fun number(name: String) = long(name).optional()
+        }
 
-    internal abstract fun toJson(): JsonElement
-}
+        internal class FloatProperties(jsonObject: JsonObject) : NumberProperties<Float>(jsonObject) {
+            override fun number(name: String) = float(name).optional()
+        }
 
+        internal class DoubleProperties(jsonObject: JsonObject) : NumberProperties<Double>(jsonObject) {
+            override fun number(name: String) = double(name).optional()
+        }
 
-data class ArraySchema(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val items: JsonSchema<*>? = null,
-    private val additionalItems: JsonSchema<*>? = null,
-    private val minItems: Int? = null,
-    private val maxItems: Int? = null,
-    private val uniqueItems: Boolean = false,
-) : JsonSchema<ArraySchema>() {
-    override val type: JsonSchemaType = JsonSchemaType.ARRAY
-
-    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
-
-    override fun JsonObject.build() {
-        "items".nonNull(items?.toJson())
-        "additionalItems".nonNull(additionalItems?.toJson())
-        "minItems".nonNull(minItems)
-        "maxItems".nonNull(maxItems)
-        "uniqueItems".nonNull(uniqueItems)
-    }
-}
-
-data class StringSchema(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val minLength: Int? = null,
-    private val maxLength: Int? = null,
-    private val pattern: String? = null,
-    private val format: String? = null,
-) : JsonSchema<StringSchema>() {
-    override val type: JsonSchemaType = JsonSchemaType.STRING
-
-    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
-
-    override fun JsonObject.build() {
-        "minLength".nonNull(minLength)
-        "maxLength".nonNull(maxLength)
-        "pattern".nonNull(pattern)
-        "format".nonNull(format)
-    }
-}
-
-sealed class NumericSchema<N : Number, S : NumericSchema<N, S>>(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-    val properties: NumericProperties<N>,
-    override val type: JsonSchemaType = JsonSchemaType.NUMBER,
-) : JsonSchema<S>() {
-    override fun withMetadata(metadata: SchemaMetadata): S = copy(metadata = metadata)
-    fun withProperties(properties: NumericProperties<N>): S = copy(properties = properties)
-    abstract fun copy(
-        metadata: SchemaMetadata = this.metadata,
-        properties: NumericProperties<N> = this.properties,
-    ): S
-    inline fun mapProperties(transform: NumericProperties<N>.() -> NumericProperties<N>): S = withProperties(properties.transform())
-
-    override fun JsonObject.build() {
-        properties.run { build() }
-    }
-}
-
-class NumberSchema<N : Number> private constructor(
-    metadata: SchemaMetadata = SchemaMetadata(),
-    properties: NumericProperties<N>,
-) : NumericSchema<N, NumberSchema<N>>(metadata, properties) {
-
-    override fun copy(metadata: SchemaMetadata, properties: NumericProperties<N>) =
-        NumberSchema(metadata, properties)
-
-    companion object {
-        @JvmName("intNumberSchema")
-        operator fun invoke(
-            metadata: SchemaMetadata = SchemaMetadata(),
-            properties: IntProperties = IntProperties(),
-        ) = NumberSchema(metadata, properties)
-
-        @JvmName("longNumberSchema")
-        operator fun invoke(
-            metadata: SchemaMetadata = SchemaMetadata(),
-            properties: LongProperties = LongProperties(),
-        ) = NumberSchema(metadata, properties)
-
-        @JvmName("floatNumberSchema")
-        operator fun invoke(
-            metadata: SchemaMetadata = SchemaMetadata(),
-            properties: FloatProperties = FloatProperties(),
-        ) = NumberSchema(metadata, properties)
-
-        @JvmName("doubleNumberSchema")
-        operator fun invoke(
-            metadata: SchemaMetadata = SchemaMetadata(),
-            properties: DoubleProperties = DoubleProperties(),
-        ) = NumberSchema(metadata, properties)
-
-        val int = this(properties = IntProperties())
-        val long = this(properties = LongProperties())
-        val float = this(properties = FloatProperties())
-        val double = this(properties = DoubleProperties())
-    }
-}
-
-data class BooleanSchema(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-) : JsonSchema<BooleanSchema>() {
-    override val type: JsonSchemaType = JsonSchemaType.BOOLEAN
-    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
-
-    override fun JsonObject.build() {}
-}
-
-data class NullSchema(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-) : JsonSchema<NullSchema>() {
-    override val type: JsonSchemaType = JsonSchemaType.NULL
-    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
-
-    override fun JsonObject.build() {}
-}
-
-data class ReferenceSchema(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val reference: String,
-) : JsonSchema<ReferenceSchema>() {
-    override val type: JsonSchemaType = JsonSchemaType.OBJECT
-    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
-
-    internal companion object {
-        const val refProperty = "\$ref"
+        operator fun invoke(block: NumberProperties<N>.() -> Unit) = block()
     }
 
-    override fun JsonObject.build() {
-        refProperty(reference)
-    }
-}
+    class ObjectProperties(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(jsonObject) {
+        operator fun get(name: String) = jsonObject[name]?.jsonObject?.let { JsonSchema(it) }
+        operator fun set(name: String, value: JsonSchema?) {
+            jsonObject.setNonNull(name, value?.jsonObject)
+        }
 
-data class CompositeSchema(
-    override val metadata: SchemaMetadata = SchemaMetadata(),
-    private val allOf: List<JsonSchema<*>> = emptyList(),
-    private val anyOf: List<JsonSchema<*>> = emptyList(),
-    private val oneOf: List<JsonSchema<*>> = emptyList(),
-    private val not: JsonSchema<*>? = null,
-) : JsonSchema<CompositeSchema>() {
-    override val type: JsonSchemaType = JsonSchemaType.OBJECT
-    override fun withMetadata(metadata: SchemaMetadata) = copy(metadata = metadata)
+        operator fun invoke(block: ObjectProperties.() -> Unit) = block()
 
-    internal companion object {
-        const val allOfProperty = "allOf"
-        const val anyOfProperty = "anyOf"
-        const val oneOfProperty = "oneOf"
-        const val notProperty = "not"
-    }
-
-    override fun JsonObject.build() {
-        setCompositeType(allOf, allOfProperty)
-        setCompositeType(anyOf, anyOfProperty)
-        setCompositeType(oneOf, oneOfProperty)
-        not?.let { notProperty(it.toJson()) }
-    }
-
-    private fun JsonObject.setCompositeType(list: List<JsonSchema<*>>, property: String) {
-        if (list.isNotEmpty()) list.mapTo(property[{ }]) { it.toJson() }
+        operator fun invoke(name: String, block: JsonSchema.() -> Unit) {
+            jsonObject.getOrPut(name) { JsonObject() }
+                .jsonObject
+                .let { JsonSchema(it) }
+                .block()
+        }
     }
 }

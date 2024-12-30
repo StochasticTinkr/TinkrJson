@@ -11,7 +11,6 @@ data class JsonString(override val string: String) : JsonLiteral {
     override fun toString() = """JsonString("$string")"""
 }
 
-
 /**
  * Convert the receiver to a [JsonString].
  */

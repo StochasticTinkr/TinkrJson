@@ -5,6 +5,16 @@ package com.stochastictinkr.json
  */
 data object JsonNull : JsonLiteral {
     override val isNull get() = true
+    override val jsonObjectUnlessNull get() = null
+    override val jsonArrayUnlessNull get() = null
+    override val stringUnlessNull get() = null
+    override val booleanUnlessNull get() = null
+    override val numberUnlessNull get() = null
+    override val intUnlessNull get() = null
+    override val longUnlessNull get() = null
+    override val floatUnlessNull get() = null
+
+    override fun <R> unlessNull(block: JsonElement.() -> R): R? = null
 }
 
 /**

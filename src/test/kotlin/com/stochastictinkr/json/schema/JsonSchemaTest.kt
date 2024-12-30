@@ -20,7 +20,7 @@ class JsonSchemaTests {
     fun `test metadata json`() {
         AssertThat(
             StringSchema().withMetadata(
-                SchemaMetadata(
+                Common(
                     title = "String Schema",
                     description = "A schema for strings",
                     default = JsonString("default"),
