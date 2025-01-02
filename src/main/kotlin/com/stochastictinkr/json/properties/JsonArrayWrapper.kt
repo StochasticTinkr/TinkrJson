@@ -4,8 +4,9 @@ import com.stochastictinkr.json.*
 
 class JsonArrayWrapper<V>(
     private val converter: Converter<JsonElement, V>,
-    val jsonArray: JsonArray = JsonArray()
-): AbstractMutableList<V>() {
+    val jsonArray: JsonArray = JsonArray(),
+) : AbstractMutableList<V>() {
+
     override fun add(index: Int, element: V) {
         jsonArray.add(index, converter.reverse(element))
     }

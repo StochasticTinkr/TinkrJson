@@ -4,27 +4,31 @@ import com.stochastictinkr.json.*
 
 sealed class ToKotlinType<K>(
     val converter: Converter<JsonElement, K>,
+    val createDefault: (() -> K)? = null,
 ) {
     constructor(
         forward: Transformer<JsonElement, K>,
         reverse: Transformer<K, JsonElement>,
-    ) : this(Converter(forward, reverse))
+        createDefault: (() -> K)? = null,
+    ) : this(Converter(forward, reverse), createDefault)
 
-    data object BooleanType : ToKotlinType<Boolean>(JsonElement::boolean, Boolean::toJsonBoolean)
-
-    data object IntType : ToKotlinType<Int>(JsonElement::int, Int::toJsonNumber)
-    data object LongType : ToKotlinType<Long>(JsonElement::long, Long::toJsonNumber)
-    data object FloatType : ToKotlinType<Float>(JsonElement::float, Float::toJsonNumber)
-    data object DoubleType : ToKotlinType<Double>(JsonElement::double, Double::toJsonNumber)
-    data object StringType : ToKotlinType<String>(JsonElement::string, String::toJsonString)
-    data object JsonObjectType : ToKotlinType<JsonObject>(JsonElement::jsonObject, { it })
-    data object JsonArrayType : ToKotlinType<JsonArray>(JsonElement::jsonArray, { it })
-    data object AnyType : ToKotlinType<JsonElement>({ it }, { it })
+    data object BooleanType : ToKotlinType<Boolean>(JsonElement::boolean, Boolean::toJsonBoolean, { false })
+    data object IntType : ToKotlinType<Int>(JsonElement::int, Int::toJsonNumber, { 0 })
+    data object LongType : ToKotlinType<Long>(JsonElement::long, Long::toJsonNumber, { 0L })
+    data object FloatType : ToKotlinType<Float>(JsonElement::float, Float::toJsonNumber, { 0.0f })
+    data object DoubleType : ToKotlinType<Double>(JsonElement::double, Double::toJsonNumber, { 0.0 })
+    data object StringType : ToKotlinType<String>(JsonElement::string, String::toJsonString, { "" })
+    data object JsonObjectType : ToKotlinType<JsonObject>(JsonElement::jsonObject, { it }, ::JsonObject)
+    data object JsonArrayType : ToKotlinType<JsonArray>(JsonElement::jsonArray, { it }, ::JsonArray)
+    data object AnyType : ToKotlinType<JsonElement>({ it }, { it }, { JsonNull })
 
     class WrappedType<K : Any, W : Any>(
         wrapped: ToKotlinType<K>,
         converter: Converter<K, W>,
-    ) : ToKotlinType<W>(wrapped.converter then converter)
+    ) : ToKotlinType<W>(
+        converter = wrapped.converter then converter,
+        createDefault = wrapped.createDefault?.let { { converter.forward(it()) } }
+    )
 }
 
 val boolean = RequiredNonNullDescriptor(ToKotlinType.BooleanType)
@@ -58,6 +62,8 @@ fun <W : JsonObjectWrapper> Converter(wrap: (JsonObject) -> W) = Converter<JsonO
     { it.jsonObject }
 )
 
+fun <V> Converter<JsonObject, V>.fromElement() = ToKotlinType.JsonObjectType.converter then this
+
 sealed interface Presence
 data object Required : Presence
 data object Optional : Presence
@@ -90,5 +96,4 @@ fun <P : Presence, K : Any, D : Descriptor<P, K, K>> PropertyDescriptor<D>.nulla
 
 fun <O : OptionalProperty<*, *>> O.byRef() = ByReference(this)
 
-@JvmInline
-value class ByReference<T>(val value: T)
+data class ByReference<T>(val value: T)

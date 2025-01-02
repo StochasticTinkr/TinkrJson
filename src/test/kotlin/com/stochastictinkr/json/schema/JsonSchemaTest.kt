@@ -2,29 +2,32 @@ package com.stochastictinkr.json.schema
 
 import com.stochastictinkr.json.*
 import com.stochastictinkr.json.parsing.*
-import com.stochastictinkr.json.properties.*
 import org.intellij.lang.annotations.*
 import kotlin.test.*
 
 class JsonSchemaTests {
 
     @Test
-    fun `test string schema json`() {
-        AssertThat(JsonSchema().apply {
-            type = "string"
-        }) buildsTo """ { "type": "string" } """
+    fun `string schema json`() {
+        AssertThat(jsonSchema {
+            string {
+                description = "A string schema"
+            }
+        }) buildsTo """ { "type": "string", "description": "A string schema" } """
     }
 
     @Test
-    fun `test metadata json`() {
-        AssertThat(JsonSchema().apply {
-            type = "string"
-            title = "String Schema"
-            description = "A schema for strings"
-            default = JsonString("default")
-            examples = jsonArray {
-                add("example1")
-                add("example2")
+    fun `test common properties`() {
+        AssertThat(jsonSchema {
+            common {
+                type = "string"
+                title = "String Schema"
+                description = "A schema for strings"
+                default = JsonString("default")
+                examples = jsonArray {
+                    add("example1")
+                    add("example2")
+                }
             }
         }
         ) buildsTo """
@@ -40,12 +43,11 @@ class JsonSchemaTests {
 
     @Test
     fun `test integer schema json`() {
-        AssertThat(JsonSchema().apply {
-            type = "integer"
-            intProperties.set(
-                minimum = 0,
+        AssertThat(jsonSchema {
+            integer {
+                minimum = 0
                 maximum = 100
-            )
+            }
         }
         ) buildsTo """
             {
@@ -58,15 +60,14 @@ class JsonSchemaTests {
 
     @Test
     fun `test array schema json`() {
-        AssertThat(JsonSchema().apply {
-            type = "array"
-            items.set(
-                JsonSchema().apply {
-                    type = "string"
+        AssertThat(jsonSchema {
+            array {
+                items {
+                    string()
                 }
-            )
-            minItems = 1
-            uniqueItems = true
+                minItems = 1
+                uniqueItems = true
+            }
         }
         ) buildsTo """
             {
@@ -83,18 +84,16 @@ class JsonSchemaTests {
     @Test
     fun `test object schema json`() {
         AssertThat(
-            JsonSchema().apply {
-                type = "object"
-                properties.set(JsonSchema.ObjectProperties().also {
-                    it["name"] = JsonSchema().apply {
-                        type = "string"
+            jsonSchema {
+                obj {
+                    property("name") { string() }
+                    property("age") {
+                        integer {
+                            minimum = 0
+                        }
                     }
-                    it["age"] = JsonSchema().apply {
-                        type = "integer"
-                        intProperties.set(minimum = 0)
-                    }
-                })
-                required.element = jsonArray { add("name") }
+                    required("name")
+                }
             }
         ) buildsTo """
             {

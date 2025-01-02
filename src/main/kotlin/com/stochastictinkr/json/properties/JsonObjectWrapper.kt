@@ -115,7 +115,11 @@ open class JsonObjectWrapper(val jsonObject: JsonObject = JsonObject()) {
     protected operator fun <K : Any, V : K?, D : OptionalDescriptor<K, V>> ByReference<PropertyDescriptor<D>>.getValue(
         thisRef: Any?,
         property: Any?,
-    ) = OptionalPropertyReference<D>(jsonObject, value.name, value.descriptor)
+    ) = OptionalPropertyReference<D>(
+        jsonObject, value.name, value.descriptor, value.descriptor.toKotlinType.createDefault?.let {
+            { value.descriptor.reverse(it()) }
+        }
+    )
 }
 
 fun <K : Any, V : K?, D : OptionalDescriptor<K, V>> PropertyDescriptor<D>.byRef() = ByReference(this)
