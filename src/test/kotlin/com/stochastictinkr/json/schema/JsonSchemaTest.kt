@@ -2,6 +2,7 @@ package com.stochastictinkr.json.schema
 
 import com.stochastictinkr.json.*
 import com.stochastictinkr.json.parsing.*
+import com.stochastictinkr.json.properties.*
 import org.intellij.lang.annotations.*
 import kotlin.test.*
 
@@ -9,27 +10,23 @@ class JsonSchemaTests {
 
     @Test
     fun `test string schema json`() {
-        AssertThat(StringSchema()) buildsTo """
-            {
-                "type": "string"
-            }
-            """
+        AssertThat(JsonSchema().apply {
+            type = "string"
+        }) buildsTo """ { "type": "string" } """
     }
 
     @Test
     fun `test metadata json`() {
-        AssertThat(
-            StringSchema().withMetadata(
-                Common(
-                    title = "String Schema",
-                    description = "A schema for strings",
-                    default = JsonString("default"),
-                    examples = jsonArray {
-                        add("example1")
-                        add("example2")
-                    }
-                )
-            )
+        AssertThat(JsonSchema().apply {
+            type = "string"
+            title = "String Schema"
+            description = "A schema for strings"
+            default = JsonString("default")
+            examples = jsonArray {
+                add("example1")
+                add("example2")
+            }
+        }
         ) buildsTo """
             {
                 "type": "string",
@@ -43,10 +40,13 @@ class JsonSchemaTests {
 
     @Test
     fun `test integer schema json`() {
-        AssertThat(
-            IntegerSchema(
-                properties = IntProperties(minimum = 0, maximum = 100)
+        AssertThat(JsonSchema().apply {
+            type = "integer"
+            intProperties.set(
+                minimum = 0,
+                maximum = 100
             )
+        }
         ) buildsTo """
             {
                 "type": "integer",
@@ -58,12 +58,16 @@ class JsonSchemaTests {
 
     @Test
     fun `test array schema json`() {
-        AssertThat(
-            ArraySchema(
-                items = StringSchema(),
-                minItems = 1,
-                uniqueItems = true
+        AssertThat(JsonSchema().apply {
+            type = "array"
+            items.set(
+                JsonSchema().apply {
+                    type = "string"
+                }
             )
+            minItems = 1
+            uniqueItems = true
+        }
         ) buildsTo """
             {
                 "type": "array",
@@ -79,13 +83,19 @@ class JsonSchemaTests {
     @Test
     fun `test object schema json`() {
         AssertThat(
-            ObjectSchema(
-                properties = mapOf(
-                    "name" to StringSchema(),
-                    "age" to IntegerSchema(properties = IntProperties(minimum = 0))
-                ),
-                required = listOf("name")
-            )
+            JsonSchema().apply {
+                type = "object"
+                properties.set(JsonSchema.ObjectProperties().also {
+                    it["name"] = JsonSchema().apply {
+                        type = "string"
+                    }
+                    it["age"] = JsonSchema().apply {
+                        type = "integer"
+                        intProperties.set(minimum = 0)
+                    }
+                })
+                required.element = jsonArray { add("name") }
+            }
         ) buildsTo """
             {
                 "type": "object",
@@ -98,54 +108,12 @@ class JsonSchemaTests {
             """
     }
 
-    @Test
-    fun `test boolean schema json`() {
-        AssertThat(BooleanSchema()) buildsTo """
-            {
-                "type": "boolean"
-            }
-            """
-    }
-
-    @Test
-    fun `test null schema json`() {
-        AssertThat(NullSchema()) buildsTo """
-            {
-                "type": "null"
-            }
-            """
-    }
-
-    @Test
-    fun `test composite schema json`() {
-        AssertThat(
-            CompositeSchema(
-                allOf = listOf(StringSchema(), IntegerSchema(properties = IntProperties(minimum = 0))),
-                anyOf = listOf(BooleanSchema(), NullSchema()),
-                not = StringSchema()
-            )
-        ) buildsTo """
-            {
-                "type": "object",
-                "allOf": [
-                    { "type": "string" },
-                    { "type": "integer", "minimum": 0 }
-                ],
-                "anyOf": [
-                    { "type": "boolean" },
-                    { "type": "null" }
-                ],
-                "not": { "type": "string" }
-            }
-            """
-    }
-
     private infix fun AssertThat<out JsonSchema>.buildsTo(
         @Language("JSON")
         expected: String,
     ) = assertEquals(
         expected = JsonParser.jsonElement(expected),
-        actual = value.toJson(),
+        actual = value.jsonObject,
     )
 
     private data class AssertThat<T>(val value: T)

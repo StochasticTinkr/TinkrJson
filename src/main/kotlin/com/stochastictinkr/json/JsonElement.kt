@@ -171,7 +171,6 @@ sealed interface JsonElement {
      */
     val doubleUnlessNull: Double? get() = double
 
-
     /**
      * This element as a [JsonNull], or throws an error if this element is not a JSON null.
      */

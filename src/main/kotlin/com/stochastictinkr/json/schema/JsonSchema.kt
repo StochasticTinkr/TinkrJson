@@ -4,25 +4,24 @@ package com.stochastictinkr.json.schema
 
 import com.stochastictinkr.json.*
 import com.stochastictinkr.json.properties.*
-import kotlin.properties.*
 
 class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(jsonObject) {
     // Common properties
     var type by string("type").optional()
     var title by string("title").optional()
     var description by string("description").optional()
-    var default by jsonObject("default").optional()
+    var default by jsonElement("default").optional()
     var examples by jsonArray("examples").optional()
 
     // Object properties
-    val properties by jsonObject(::ObjectProperties, "properties").optionalRef()
-    val required by jsonArray(string, "required").optionalRef()
+    val properties by jsonObject(::ObjectProperties, "properties").optional().byRef()
+    val required by jsonArray(string, "required").optional().byRef()
     var additionalProperties by jsonElement("additionalProperties")
     var minProperties by int("minProperties").optional()
     var maxProperties by int("maxProperties").optional()
 
     // Array properties
-    val items by jsonObject(::JsonSchema, "items").optionalRef()
+    val items by jsonObject(::JsonSchema, "items").optional().byRef()
     var minItems by int("minItems").optional()
     var maxItems by int("maxItems").optional()
     var uniqueItems by boolean("uniqueItems").optional()
@@ -33,10 +32,10 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
     var pattern by string("pattern").optional()
 
     // Number properties
-    val intProperties get():NumberProperties<Int> = NumberProperties.IntProperties(jsonObject)
-    val longProperties get():NumberProperties<Long> = NumberProperties.LongProperties(jsonObject)
-    val floatProperties get():NumberProperties<Float> = NumberProperties.FloatProperties(jsonObject)
-    val doubleProperties get():NumberProperties<Double> = NumberProperties.DoubleProperties(jsonObject)
+    val intProperties get():NumberProperties<Int> = NumberProperties(jsonObject, int)
+    val longProperties get():NumberProperties<Long> = NumberProperties(jsonObject, long)
+    val floatProperties get():NumberProperties<Float> = NumberProperties(jsonObject, float)
+    val doubleProperties get():NumberProperties<Double> = NumberProperties(jsonObject, double)
 
     fun numberProperties(
         multipleOf: Int? = null,
@@ -71,17 +70,20 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
     ) = doubleProperties.set(multipleOf, minimum, maximum, exclusiveMinimum, exclusiveMaximum)
 
     // Composition properties
-    val allOf by jsonArray(::JsonSchema, "allOf").optionalRef()
-    val anyOf by jsonArray(::JsonSchema, "anyOf").optionalRef()
-    val oneOf by jsonArray(::JsonSchema, "oneOf").optionalRef()
-    val not by jsonObject(::JsonSchema, "not").optionalRef()
+    val allOf by jsonArray(::JsonSchema, "allOf").optional().byRef()
+    val anyOf by jsonArray(::JsonSchema, "anyOf").optional().byRef()
+    val oneOf by jsonArray(::JsonSchema, "oneOf").optional().byRef()
+    val not by jsonObject(::JsonSchema, "not").optional().byRef()
 
-    sealed class NumberProperties<N : Number>(jsonObject: JsonObject) : JsonObjectWrapper(jsonObject) {
-        var multipleOf by number("multipleOf")
-        var minimum by number("minimum")
-        var maximum by number("maximum")
-        var exclusiveMinimum by number("exclusiveMinimum")
-        var exclusiveMaximum by number("exclusiveMaximum")
+    class NumberProperties<N : Number>(
+        jsonObject: JsonObject,
+        number: RequiredNonNullDescriptor<N>,
+    ) : JsonObjectWrapper(jsonObject) {
+        var multipleOf by number("multipleOf").optional()
+        var minimum by number("minimum").optional()
+        var maximum by number("maximum").optional()
+        var exclusiveMinimum by number("exclusiveMinimum").optional()
+        var exclusiveMaximum by number("exclusiveMaximum").optional()
 
         fun set(
             multipleOf: N? = null,
@@ -105,24 +107,6 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
             exclusiveMaximum = null
         }
 
-        protected abstract fun number(name: String): OptionalProperty<N, N?>
-
-        internal class IntProperties(jsonObject: JsonObject) : NumberProperties<Int>(jsonObject) {
-            override fun number(name: String) = int(name).optional()
-        }
-
-        internal class LongProperties(jsonObject: JsonObject) : NumberProperties<Long>(jsonObject) {
-            override fun number(name: String) = long(name).optional()
-        }
-
-        internal class FloatProperties(jsonObject: JsonObject) : NumberProperties<Float>(jsonObject) {
-            override fun number(name: String) = float(name).optional()
-        }
-
-        internal class DoubleProperties(jsonObject: JsonObject) : NumberProperties<Double>(jsonObject) {
-            override fun number(name: String) = double(name).optional()
-        }
-
         operator fun invoke(block: NumberProperties<N>.() -> Unit) = block()
     }
 
@@ -142,3 +126,4 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
         }
     }
 }
+
