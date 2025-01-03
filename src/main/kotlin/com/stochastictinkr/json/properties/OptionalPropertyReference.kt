@@ -2,10 +2,10 @@ package com.stochastictinkr.json.properties
 
 import com.stochastictinkr.json.*
 
-class OptionalPropertyReference<D : OptionalDescriptor<*, *>>(
+class OptionalPropertyReference<Value>(
     private val jsonObject: JsonObject,
     private val key: String,
-    val descriptor: D,
+    val descriptor: TypeDescriptor<Value, *>,
     private val createDefault: (() -> JsonElement)? = null,
 ) {
     val isPresent: Boolean
@@ -27,33 +27,39 @@ class OptionalPropertyReference<D : OptionalDescriptor<*, *>>(
     }
 }
 
-fun <K : Any, V : K?, D : OptionalDescriptor<K, V>> OptionalPropertyReference<D>.set(value: V?) {
-    element = value?.let(descriptor.toKotlinType.converter.reverse::transform) ?: JsonNull
+@JvmName("setNonNullOptionalProperty")
+fun <K : Any> OptionalPropertyReference<K>.set(value: K?) {
+    element = value?.let(descriptor.converter::reverse)
+}
+
+@JvmName("setNullableOptionalProperty")
+fun <K : Any> OptionalPropertyReference<K?>.set(value: K?) {
+    element = descriptor.converter.reverse(value)
 }
 
 @JvmName("getOptionalPropertyOrNull")
-fun <K : Any, D : OptionalDescriptor<K, *>> OptionalPropertyReference<D>.getOrNull(): K? {
-    return element?.unlessNull(descriptor::forward)
+fun <K> OptionalPropertyReference<K>.getOrNull(): K? {
+    return element?.unlessNull(descriptor.converter::forward)
 }
 
 @JvmName("createOrGetNullableOptionalProperty")
-fun <K : Any, D : OptionalDescriptor<K, K?>> OptionalPropertyReference<D>.createOrGet(): K? {
-    return createOrGetElement().unlessNull(descriptor::forward)
+fun <K : Any> OptionalPropertyReference<K?>.createOrGet(): K? {
+    return createOrGetElement().unlessNull(descriptor.converter::forward)
 }
 
 @JvmName("createOrGetNonNullOptionalProperty")
-fun <K : Any, D : OptionalDescriptor<K, K>> OptionalPropertyReference<D>.createOrGet(): K {
-    return descriptor.forward(createOrGetElement())
+fun <K : Any> OptionalPropertyReference<K>.createOrGet(): K {
+    return descriptor.converter.forward(createOrGetElement())
 }
 
 @JvmName("foldNullableOptionalProperty")
-inline fun <K : Any, D : OptionalDescriptor<K, K?>, R> OptionalPropertyReference<D>.fold(
+inline fun <K : Any, R> OptionalPropertyReference<K?>.fold(
     ifPresent: (K?) -> R,
     ifAbsent: () -> R,
-): R = element?.let { ifPresent(it.unlessNull(descriptor::forward)) } ?: ifAbsent()
+): R = element?.let { ifPresent(it.unlessNull(descriptor.converter::forward)) } ?: ifAbsent()
 
 @JvmName("foldNonNullOptionalProperty")
-inline fun <K : Any, D : OptionalDescriptor<K, K>, R> OptionalPropertyReference<D>.fold(
+inline fun <K : Any, R> OptionalPropertyReference<K>.fold(
     ifPresent: (K) -> R,
     ifAbsent: () -> R,
-): R = element?.let { ifPresent(descriptor.forward(it)) } ?: ifAbsent()
+): R = element?.let { ifPresent(descriptor.converter.forward(it)) } ?: ifAbsent()

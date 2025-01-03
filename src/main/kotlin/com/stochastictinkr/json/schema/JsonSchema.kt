@@ -2,7 +2,9 @@
 
 package com.stochastictinkr.json.schema
 
-import com.stochastictinkr.json.*
+import com.stochastictinkr.json.JsonObject
+import com.stochastictinkr.json.JsonArray
+import com.stochastictinkr.json.JsonElement
 import com.stochastictinkr.json.properties.*
 
 @DslMarker
@@ -24,7 +26,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
     }
 
     @JsonSchemaDsl
-    fun <N : Number> number(type: RequiredNonNullDescriptor<N>, block: TypedNumericProperties<N>.() -> Unit = {}) {
+    fun <N : Number> number(type: TypeDescriptor<N, *>, block: TypedNumericProperties<N>.() -> Unit = {}) {
         commonProperties.type = "number"
         numericProperties[type].block()
     }
@@ -64,7 +66,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
     }
 
     inner class NumericProperties : CommonProperties() {
-        operator fun <N : Number> get(type: RequiredNonNullDescriptor<N>) = TypedNumericProperties(type)
+        operator fun <N : Number> get(type: TypeDescriptor<N, *>) = TypedNumericProperties(type)
 
         fun set(
             multipleOf: Int? = null,
@@ -100,7 +102,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
 
     }
 
-    inner class TypedNumericProperties<N : Number>(number: RequiredNonNullDescriptor<N>) : CommonProperties() {
+    inner class TypedNumericProperties<N : Number>(number: TypeDescriptor<N, *>) : CommonProperties() {
         var multipleOf by number("multipleOf").optional()
         var minimum by number("minimum").optional()
         var maximum by number("maximum").optional()
@@ -179,11 +181,15 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
             this.maxProperties = maxProperties
         }
 
-        fun property(name: String, block: JsonSchema.() -> Unit) =
+        fun property(name: String, block: JsonSchema.() -> Unit): JsonSchema =
             properties.createOrGet()(name, block)
 
         fun required(vararg names: String) {
             required.createOrGet().addAll(names)
+        }
+
+        fun removeRequired(name: String) {
+            required.getOrNull()?.remove(name)
         }
     }
 
@@ -195,12 +201,12 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
 
         operator fun invoke(block: SchemaMap.() -> Unit) = block()
 
-        operator fun invoke(name: String, block: JsonSchema.() -> Unit) {
-            jsonObject.getOrPut(name) { JsonObject() }
+        operator fun invoke(name: String, block: JsonSchema.() -> Unit): JsonSchema =
+            jsonObject
+                .getOrPut(name) { JsonObject() }
                 .jsonObject
                 .let { JsonSchema(it) }
-                .block()
-        }
+                .apply(block)
 
         companion object : (JsonObject) -> SchemaMap {
             override fun invoke(jsonObject: JsonObject) = SchemaMap(jsonObject)

@@ -4,122 +4,83 @@ import com.stochastictinkr.json.*
 import kotlin.reflect.*
 
 open class JsonObjectWrapper(val jsonObject: JsonObject = JsonObject()) {
-    protected operator fun <D : Descriptor<*, *, *>> D.invoke(name: String) = PropertyDescriptor(name, this)
+    operator fun <Value> TypeDescriptor<Value, *>.invoke(name: String) =
+        PropertyDescriptor(name, this)
 
-    @JvmName("createRequiredNonNullProperty")
-    protected operator fun <W : JsonObjectWrapper, D : RequiredNonNullDescriptor<JsonObject>> D.invoke(
-        wrap: (JsonObject) -> W,
+    @JvmName("wrappedJsonObject")
+    operator fun <Value : JsonObjectWrapper> TypeDescriptor<JsonObject, *>.invoke(
+        wrap: (JsonObject) -> Value,
         name: String,
-    ) = this(name).modify { wrapped(wrap) }
+    ) =
+        PropertyDescriptor(name, this wrapped wrap)
 
-    @JvmName("createRequiredNullableProperty")
-    protected operator fun <W : JsonObjectWrapper, D : NullableDescriptor<Required, JsonObject>> D.invoke(
-        wrap: (JsonObject) -> W,
+    @JvmName("wrappedJsonArrayOfJsonObjectWrapper")
+    operator fun <Value : JsonObjectWrapper> TypeDescriptor<JsonArray, *>.invoke(
+        wrap: (JsonObject) -> Value,
         name: String,
-    ) = this(name).modify { wrapped(wrap) }
+    ) = PropertyDescriptor(name, this wrappedItems wrap)
 
-    @JvmName("createRequiredNonNullWrappedArrayProperty")
-    protected operator fun <I : JsonObjectWrapper, D : RequiredNonNullDescriptor<JsonArray>> D.invoke(
-        wrapItems: (JsonObject) -> I,
+    operator fun <Value> TypeDescriptor<JsonArray, *>.invoke(
+        itemType: TypeDescriptor<Value, *>,
         name: String,
-    ) = PropertyDescriptor(
-        name, wrapped(
-            Converter(
-                {
-                    JsonArrayWrapper(
-                        ToKotlinType.JsonObjectType.converter then Converter(wrapItems),
-                        it.jsonArray
-                    )
-                },
-                { it.jsonArray })
-        )
-    )
+    ) = PropertyDescriptor(name, this wrappedItems itemType)
 
-    @JvmName("createOptionalNonNullProperty")
-    protected operator fun <I : Any, E : RequiredDescriptor<I, I>, D : RequiredNonNullDescriptor<JsonArray>> D.invoke(
-        items: E,
-        name: String,
-    ) = PropertyDescriptor(
-        name, wrapped(
-            Converter(
-                { JsonArrayWrapper(items.toKotlinType.converter, it.jsonArray) },
-                { it.jsonArray })
-        )
-    )
-
-    // Required properties
-    @Suppress("unused")
-    @JvmName("getRequiredNonNullProperty")
-    protected operator fun <K : Any, D : RequiredDescriptor<K, K>> PropertyDescriptor<D>.getValue(
+    operator fun <Value> RequiredPropertyDescriptor<Value>.getValue(
         thisRef: Any?,
-        property: KProperty<*>,
-    ): K = descriptor.forward(jsonObject.getValue(name))
-
-    @Suppress("unused")
-    @JvmName("setRequiredNullableProperty")
-    protected operator fun <K : Any, D : RequiredDescriptor<K, K?>> PropertyDescriptor<D>.getValue(
-        thisRef: Any?,
-        property: KProperty<*>,
-    ): K? = jsonObject.getValue(name).unlessNull(descriptor::forward)
-
-    @Suppress("unused")
-    @JvmName("setRequiredNonNullProperty")
-    protected operator fun <K : Any, D : RequiredDescriptor<K, K>> PropertyDescriptor<D>.setValue(
-        thisRef: Any?,
-        property: KProperty<*>,
-        value: K,
-    ) {
-        jsonObject[name] = descriptor.reverse(value)
+        unused: KProperty<*>,
+    ): Value {
+        val element =
+            jsonObject[property.name] ?: throw NoSuchElementException("Property ${property.name} is required.")
+        return property.type.converter.forward(element)
     }
 
-    @Suppress("unused")
-    @JvmName("setRequiredNullableProperty")
-    protected operator fun <K : Any, D : RequiredDescriptor<K, K?>> PropertyDescriptor<D>.setValue(
+    operator fun <Value> RequiredPropertyDescriptor<Value>.setValue(
         thisRef: Any?,
-        property: KProperty<*>,
-        value: K?,
+        unused: KProperty<*>,
+        value: Value,
     ) {
-        jsonObject[name] = value?.let(descriptor::reverse) ?: JsonNull
+        jsonObject[property.name] = property.type.converter.reverse(value)
     }
 
-    // Optional properties
-    @Suppress("unused")
-    @JvmName("getOptionalPropertyOrNull")
-    protected operator fun <K : Any, D : OptionalDescriptor<K, *>> PropertyDescriptor<D>.getValue(
+    operator fun <Value> OptionalPropertyDescriptor<Value>.getValue(
         thisRef: Any?,
-        property: KProperty<*>,
-    ): K? = jsonObject[name]?.let(descriptor::forward)
-
-    @Suppress("unused")
-    @JvmName("setOptionalNonNullPropertyOrRemoveKey")
-    protected operator fun <K : Any, D : OptionalDescriptor<K, K>> PropertyDescriptor<D>.setValue(
-        thisRef: Any?,
-        property: KProperty<*>,
-        value: K?,
-    ) {
-        jsonObject.setNonNull(name, value?.let(descriptor::reverse))
+        unused: KProperty<*>,
+    ): Value? {
+        val element = jsonObject[property.name]
+        return element?.let(property.type.converter::forward)
     }
 
-    @Suppress("unused")
-    @JvmName("setOptionalNullableProperty")
-    protected operator fun <K : Any, D : OptionalDescriptor<K, K?>> PropertyDescriptor<D>.setValue(
+    operator fun <Value> OptionalPropertyDescriptor<Value>.setValue(
         thisRef: Any?,
-        property: KProperty<*>,
-        value: K?,
+        unused: KProperty<*>,
+        value: Value?,
     ) {
-        jsonObject[name] = value?.let(descriptor::reverse) ?: JsonNull
+        jsonObject.setNonNull(property.name, value?.let(property.type.converter::reverse))
     }
 
-    @Suppress("unused")
-    @JvmName("getOptionalPropertyReference")
-    protected operator fun <K : Any, V : K?, D : OptionalDescriptor<K, V>> ByReference<PropertyDescriptor<D>>.getValue(
+    operator fun <Value> ByReference<Value>.getValue(
         thisRef: Any?,
-        property: Any?,
-    ) = OptionalPropertyReference<D>(
-        jsonObject, value.name, value.descriptor, value.descriptor.toKotlinType.createDefault?.let {
-            { value.descriptor.reverse(it()) }
-        }
-    )
+        unused: KProperty<*>,
+    ) = run {
+        val property = optionalProperty.property
+        val type = property.type
+        OptionalPropertyReference(jsonObject, property.name, type) { type.converter.reverse(type.createDefault()) }
+    }
 }
 
-fun <K : Any, V : K?, D : OptionalDescriptor<K, V>> PropertyDescriptor<D>.byRef() = ByReference(this)
+data class PropertyDescriptor<K>(
+    val name: String,
+    val type: TypeDescriptor<K, *>,
+) {
+    fun optional() = OptionalPropertyDescriptor(this)
+    fun required() = RequiredPropertyDescriptor(this)
+}
+
+data class RequiredPropertyDescriptor<K>(val property: PropertyDescriptor<K>)
+data class OptionalPropertyDescriptor<K>(val property: PropertyDescriptor<K>) {
+    fun byRef() = ByReference(this)
+}
+
+data class ByReference<K>(val optionalProperty: OptionalPropertyDescriptor<K>)
+
+fun <K : Any> PropertyDescriptor<K>.nullable() = PropertyDescriptor(name, type.nullable())

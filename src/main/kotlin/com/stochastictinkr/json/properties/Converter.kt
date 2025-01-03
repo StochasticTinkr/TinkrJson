@@ -24,6 +24,9 @@ class Converter<A, B>(
             forward = this.forward then next.forward,
             reverse = next.reverse then this.reverse,
         )
+
+    operator fun component1() = forward
+    operator fun component2() = reverse
 }
 
 
