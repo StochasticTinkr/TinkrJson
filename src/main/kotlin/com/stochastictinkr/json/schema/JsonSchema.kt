@@ -2,17 +2,32 @@
 
 package com.stochastictinkr.json.schema
 
-import com.stochastictinkr.json.JsonObject
-import com.stochastictinkr.json.JsonArray
-import com.stochastictinkr.json.JsonElement
+import com.stochastictinkr.json.*
 import com.stochastictinkr.json.properties.*
 
 @DslMarker
 annotation class JsonSchemaDsl
 
+interface CommonProperties {
+    var type: String?
+    var title: String?
+    var description: String?
+    var default: JsonElement?
+    var examples: JsonArray?
+
+    fun set(
+        type: String? = null,
+        title: String? = null,
+        description: String? = null,
+        default: JsonElement? = null,
+        examples: JsonArray? = null,
+    )
+}
+
 @JsonSchemaDsl
-class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(jsonObject) {
-    val commonProperties = CommonProperties()
+class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(jsonObject),
+    CommonProperties by CommonPropertiesImpl(jsonObject) {
+
     val objectProperties = ObjectProperties()
     val arrayProperties = ArrayProperties()
     val stringProperties = StringProperties()
@@ -21,37 +36,37 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
 
     @JsonSchemaDsl
     fun string(block: StringProperties.() -> Unit = {}) {
-        commonProperties.type = "string"
+        type = "string"
         stringProperties.block()
     }
 
     @JsonSchemaDsl
-    fun <N : Number> number(type: TypeDescriptor<N, *>, block: TypedNumericProperties<N>.() -> Unit = {}) {
-        commonProperties.type = "number"
-        numericProperties[type].block()
+    fun <N : Number> number(typeDescriptor: TypeDescriptor<N, *>, block: TypedNumericProperties<N>.() -> Unit = {}) {
+        type = "number"
+        numericProperties[typeDescriptor].block()
     }
 
     @JsonSchemaDsl
     fun integer(block: TypedNumericProperties<Int>.() -> Unit = {}) {
-        commonProperties.type = "integer"
+        type = "integer"
         numericProperties[int].block()
     }
 
     @JsonSchemaDsl
     fun boolean(block: CommonProperties.() -> Unit = {}) {
-        commonProperties.type = "boolean"
-        commonProperties.block()
+        type = "boolean"
+        block()
     }
 
     @JsonSchemaDsl
     fun obj(block: ObjectProperties.() -> Unit = {}) {
-        commonProperties.type = "object"
+        type = "object"
         objectProperties.block()
     }
 
     @JsonSchemaDsl
     fun array(block: ArrayProperties.() -> Unit = {}) {
-        commonProperties.type = "array"
+        type = "array"
         arrayProperties.block()
     }
 
@@ -62,10 +77,10 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
 
     @JsonSchemaDsl
     fun common(block: CommonProperties.() -> Unit) {
-        commonProperties.block()
+        block()
     }
 
-    inner class NumericProperties : CommonProperties() {
+    inner class NumericProperties : CommonProperties by this@JsonSchema {
         operator fun <N : Number> get(type: TypeDescriptor<N, *>) = TypedNumericProperties(type)
 
         fun set(
@@ -102,7 +117,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
 
     }
 
-    inner class TypedNumericProperties<N : Number>(number: TypeDescriptor<N, *>) : CommonProperties() {
+    inner class TypedNumericProperties<N : Number>(number: TypeDescriptor<N, *>) : CommonProperties by this@JsonSchema {
         var multipleOf by number("multipleOf").optional()
         var minimum by number("minimum").optional()
         var maximum by number("maximum").optional()
@@ -138,29 +153,8 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
         override fun invoke(jsonObject: JsonObject) = JsonSchema(jsonObject)
     }
 
-    open inner class CommonProperties internal constructor() {
-        var type by string("type").optional()
-        var title by string("title").optional()
-        var description by string("description").optional()
-        var default by jsonElement("default").optional()
-        var examples by jsonArray("examples").optional()
 
-        fun set(
-            type: String? = null,
-            title: String? = null,
-            description: String? = null,
-            default: JsonElement? = null,
-            examples: JsonArray? = null,
-        ) {
-            this.type = type
-            this.title = title
-            this.description = description
-            this.default = default
-            this.examples = examples
-        }
-    }
-
-    inner class ObjectProperties : CommonProperties() {
+    inner class ObjectProperties : CommonProperties by this@JsonSchema {
         val properties by jsonObject(SchemaMap, "properties").optional().byRef()
         val required by jsonArray(string, "required").optional().byRef()
         var additionalProperties by jsonElement("additionalProperties").optional()
@@ -182,7 +176,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
         }
 
         fun property(name: String, block: JsonSchema.() -> Unit): JsonSchema =
-            properties.createOrGet()(name, block)
+            properties.createOrGet().update(name, block)
 
         fun required(vararg names: String) {
             required.createOrGet().addAll(names)
@@ -201,7 +195,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
 
         operator fun invoke(block: SchemaMap.() -> Unit) = block()
 
-        operator fun invoke(name: String, block: JsonSchema.() -> Unit): JsonSchema =
+        fun update(name: String, block: JsonSchema.() -> Unit): JsonSchema =
             jsonObject
                 .getOrPut(name) { JsonObject() }
                 .jsonObject
@@ -213,7 +207,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
         }
     }
 
-    inner class ArrayProperties : CommonProperties() {
+    inner class ArrayProperties : CommonProperties by this@JsonSchema {
         val items by jsonObject(JsonSchema, "items").optional().byRef()
         var minItems by int("minItems").optional()
         var maxItems by int("maxItems").optional()
@@ -236,7 +230,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
         }
     }
 
-    inner class StringProperties : CommonProperties() {
+    inner class StringProperties : CommonProperties by this@JsonSchema {
         var minLength by int("minLength").optional()
         var maxLength by int("maxLength").optional()
         var pattern by string("pattern").optional()
@@ -252,7 +246,7 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
         }
     }
 
-    inner class CompositionProperties : CommonProperties() {
+    inner class CompositionProperties : CommonProperties by this@JsonSchema {
         val allOf by jsonArray(JsonSchema, "allOf").optional().byRef()
         val anyOf by jsonArray(JsonSchema, "anyOf").optional().byRef()
         val oneOf by jsonArray(JsonSchema, "oneOf").optional().byRef()
@@ -288,14 +282,41 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
     }
 
     class ArrayOfJsonSchema(val contents: JsonArrayWrapper<JsonSchema>) {
+        fun add(schema: JsonSchema) {
+            contents.jsonArray.add(schema.jsonObject)
+        }
+
         fun add(block: JsonSchema.() -> Unit) {
             contents.jsonArray.addObject {
                 JsonSchema(this).block()
             }
         }
     }
+
+    private class CommonPropertiesImpl(jsonObject: JsonObject) : JsonObjectWrapper(jsonObject), CommonProperties {
+        override var type by string("type").optional()
+        override var title by string("title").optional()
+        override var description by string("description").optional()
+        override var default by jsonElement("default").optional()
+        override var examples by jsonArray("examples").optional()
+
+        override fun set(
+            type: String?,
+            title: String?,
+            description: String?,
+            default: JsonElement?,
+            examples: JsonArray?,
+        ) {
+            this.type = type
+            this.title = title
+            this.description = description
+            this.default = default
+            this.examples = examples
+        }
+    }
 }
 
+
 @JsonSchemaDsl
-fun jsonSchema(block: JsonSchema.() -> Unit) = JsonSchema().apply(block)
+fun jsonSchema(block: JsonSchema.() -> Unit = {}) = JsonSchema().apply(block)
 

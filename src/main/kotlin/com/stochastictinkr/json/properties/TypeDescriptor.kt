@@ -124,7 +124,7 @@ typealias StringType = TypeDescriptor<String, JsonSchema.StringProperties>
 val string: StringType = StringType({ it.string }, { it.toJsonString() }, { "" }, { string(it) })
 
 // Boolean type descriptor
-typealias BooleanType = TypeDescriptor<Boolean, JsonSchema.CommonProperties>
+typealias BooleanType = TypeDescriptor<Boolean, CommonProperties>
 
 /**
  * A type descriptor for a `boolean` value. The default value is `false`.

@@ -25,21 +25,21 @@ open class JsonObjectWrapper(val jsonObject: JsonObject = JsonObject()) {
         name: String,
     ) = PropertyDescriptor(name, this wrappedItems itemType)
 
-    operator fun <Value> RequiredPropertyDescriptor<Value>.getValue(
+    operator fun <Value> PropertyDescriptor<Value>.getValue(
         thisRef: Any?,
         unused: KProperty<*>,
     ): Value {
         val element =
-            jsonObject[property.name] ?: throw NoSuchElementException("Property ${property.name} is required.")
-        return property.type.converter.forward(element)
+            jsonObject[name] ?: throw NoSuchElementException("Property $name is required.")
+        return type.converter.forward(element)
     }
 
-    operator fun <Value> RequiredPropertyDescriptor<Value>.setValue(
+    operator fun <Value> PropertyDescriptor<Value>.setValue(
         thisRef: Any?,
         unused: KProperty<*>,
         value: Value,
     ) {
-        jsonObject[property.name] = property.type.converter.reverse(value)
+        jsonObject[name] = type.converter.reverse(value)
     }
 
     operator fun <Value> OptionalPropertyDescriptor<Value>.getValue(
@@ -66,21 +66,21 @@ open class JsonObjectWrapper(val jsonObject: JsonObject = JsonObject()) {
         val type = property.type
         OptionalPropertyReference(jsonObject, property.name, type) { type.converter.reverse(type.createDefault()) }
     }
+
+    data class PropertyDescriptor<K>(
+        val name: String,
+        val type: TypeDescriptor<K, *>,
+    )
+
+    data class OptionalPropertyDescriptor<K>(val property: PropertyDescriptor<K>) {
+        fun byRef() = ByReference(this)
+    }
+
+    data class ByReference<K>(val optionalProperty: OptionalPropertyDescriptor<K>)
+
+    fun <K : Any> PropertyDescriptor<K>.nullable() = PropertyDescriptor(name, type.nullable())
+
+    fun <K> PropertyDescriptor<K>.optional() = OptionalPropertyDescriptor(this)
 }
 
-data class PropertyDescriptor<K>(
-    val name: String,
-    val type: TypeDescriptor<K, *>,
-) {
-    fun optional() = OptionalPropertyDescriptor(this)
-    fun required() = RequiredPropertyDescriptor(this)
-}
 
-data class RequiredPropertyDescriptor<K>(val property: PropertyDescriptor<K>)
-data class OptionalPropertyDescriptor<K>(val property: PropertyDescriptor<K>) {
-    fun byRef() = ByReference(this)
-}
-
-data class ByReference<K>(val optionalProperty: OptionalPropertyDescriptor<K>)
-
-fun <K : Any> PropertyDescriptor<K>.nullable() = PropertyDescriptor(name, type.nullable())

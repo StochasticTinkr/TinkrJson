@@ -1,7 +1,9 @@
 package com.stochastictinkr.json.schema
 
 import com.stochastictinkr.json.*
+import com.stochastictinkr.json.output.*
 import com.stochastictinkr.json.parsing.*
+import com.stochastictinkr.json.properties.JsonObjectWrapper
 import org.intellij.lang.annotations.*
 import kotlin.test.*
 
@@ -107,13 +109,25 @@ class JsonSchemaTests {
             """
     }
 
-    private infix fun AssertThat<out JsonSchema>.buildsTo(
-        @Language("JSON")
-        expected: String,
-    ) = assertEquals(
-        expected = JsonParser.jsonElement(expected),
-        actual = value.jsonObject,
-    )
-
-    private data class AssertThat<T>(val value: T)
 }
+
+@JvmName("jsonObjectWrapperBuildsTo")
+infix fun AssertThat<out JsonObjectWrapper>.buildsTo(
+    @Language("JSON")
+    expected: String,
+) = AssertThat(value.jsonObject).buildsTo(expected)
+
+@JvmName("jsonElementBuildsTo")
+infix fun AssertThat<out JsonElement>.buildsTo(
+    @Language("JSON")
+    expected: String,
+) {
+    val expectedJson = JsonParser.jsonElement(expected)
+    if (expectedJson != value) {
+        val actualString = JsonWriter.Pretty.writeToString(value)
+        val expectedString = JsonWriter.Pretty.writeToString(expectedJson)
+        assertEquals(expectedString, actualString)
+    }
+}
+
+data class AssertThat<T>(val value: T)
