@@ -202,6 +202,8 @@ class JsonSchema(jsonObject: JsonObject = JsonObject()) : JsonObjectWrapper(json
                 .let { JsonSchema(it) }
                 .apply(block)
 
+        operator fun contains(name: String) = name in jsonObject
+
         companion object : (JsonObject) -> SchemaMap {
             override fun invoke(jsonObject: JsonObject) = SchemaMap(jsonObject)
         }
