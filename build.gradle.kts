@@ -1,12 +1,14 @@
 plugins {
     kotlin("jvm") version "2.1.0"
+    `maven-publish`
 }
 
 group = "com.stochastictinkr"
-version = "1.0-SNAPSHOT"
+version = "0.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -20,6 +22,41 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(21)
+}
+
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+
+            pom {
+                name.set("tinkr-json")
+                description.set(" a lightweight and expressive Kotlin library for working with JSON.")
+                url.set("https://github.com/StochasticTinkr/TinkrJson")
+
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+
+                developers {
+                    developer {
+                        id.set("StochasticTinkr")
+                        name.set("Daniel Pitts")
+                    }
+                }
+            }
+        }
+    }
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
